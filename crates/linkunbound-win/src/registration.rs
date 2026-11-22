@@ -788,9 +788,10 @@ mod tests {
     #[test]
     fn a_third_party_prog_id_embedding_our_name_is_not_ours() {
         assert!(prog_id_is_ours("LinkUnboundWeslyGURL"));
-        assert!(prog_id_is_ours("linkunboundurl"));
-        assert!(!prog_id_is_ours("NotLinkUnboundURL"));
-        assert!(!prog_id_is_ours("LinkUnboundURLPro"));
+        assert!(prog_id_is_ours("linkunboundweslygurl"));
+        assert!(!prog_id_is_ours("LinkUnboundURL"));
+        assert!(!prog_id_is_ours("NotLinkUnboundWeslyGURL"));
+        assert!(!prog_id_is_ours("LinkUnboundWeslyGURLPro"));
     }
 
     #[test]
