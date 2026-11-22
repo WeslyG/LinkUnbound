@@ -1,0 +1,51 @@
+name: Update WinGet manifest
+
+on:
+  release:
+    types: [published]
+  workflow_run:
+    workflows: [Release builds]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: update-winget-manifest
+  cancel-in-progress: false
+
+jobs:
+  update:
+    if: >-
+      github.repository == 'WeslyG/LinkUnbound' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'release' && !github.event.release.prerelease) ||
+       (github.event_name == 'workflow_run' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.conclusion == 'success'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - name: Test manifest generation without a release or pull request
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node .github/scripts/update-winget.mjs --dry-run "$RUNNER_TEMP/winget-manifests"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: github.event_name == 'workflow_dispatch'
+        with:
+          name: winget-manifests-dry-run
+          path: ${{ runner.temp }}/winget-manifests/*.yaml
+          if-no-files-found: error
+          retention-days: 7
+      - name: Open a WinGet update pull request
+        if: github.event_name != 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+        run: node .github/scripts/update-winget.mjs
