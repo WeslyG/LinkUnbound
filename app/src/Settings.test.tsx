@@ -482,14 +482,13 @@ describe("settings", () => {
     expect(await screen.findByText(/saltándose el navegador/)).toBeInTheDocument();
   });
 
-  /// Read once, as in 1.x: the button writes the flag back with the rest of the preferences
-  /// untouched, and the section does not come back on the next visit.
+  /// Read once, as in 1.x: the button writes the flag, and the section stays away on the next visit.
   it("stops explaining Edge once the person says they understood", async () => {
     answers({ ...BASE, edge_installed: true });
     await opened();
     await userEvent.click(await screen.findByRole("button", { name: /Entendido/ }));
     expect(invoke).toHaveBeenCalledWith("prefs_set", {
-      prefs: { ...PREFS.prefs, edge_warning_dismissed: true },
+      patch: { edge_warning_dismissed: true },
     });
     expect(screen.queryByText(/saltándose el navegador/)).toBeNull();
 

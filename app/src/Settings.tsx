@@ -268,7 +268,7 @@ function Links({
     if (!noticed) return;
     const prefs = { ...noticed.prefs, edge_warning_dismissed: true };
     setNoticed({ prefs });
-    void invoke("prefs_set", { prefs }).catch(noop);
+    void invoke("prefs_set", { patch: { edge_warning_dismissed: true } }).catch(noop);
   };
   // Launch Services registers bundles, not binaries: a build tree on a Mac has no way in.
   const remedy =

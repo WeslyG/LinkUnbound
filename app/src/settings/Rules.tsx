@@ -68,10 +68,14 @@ const NEW_KINDS: { id: NewKind; label: Key; hint: Key }[] = [
   { id: "host", label: "ruleNewKindHost", hint: "ruleNewValueHost" },
   { id: "site", label: "ruleNewKindSite", hint: "ruleNewValueSite" },
   { id: "app", label: "ruleNewKindApp", hint: "ruleNewValueApp" },
-  { id: "any", label: "ruleNewKindAny", hint: "ruleNewKindAny" },
   { id: "domain_list", label: "kindDomainList", hint: "domainListSource" },
   { id: "not_domain_list", label: "kindNotDomainList", hint: "domainListSource" },
+  { id: "any", label: "ruleNewKindAny", hint: "ruleNewKindAny" },
 ];
+
+function isFallback(rule: RuleView) {
+  return rule.kind === "any" && rule.source_app === null;
+}
 
 function isList(kind: NewKind) {
   return kind === "domain_list" || kind === "not_domain_list";
@@ -366,6 +370,15 @@ export default function Rules({ initialList }: { initialList?: DomainList | null
     />
   );
 
+  const priority = (
+    <div className="space-y-1 rounded-lg border border-black/[0.08] px-3 py-2.5 text-[11.5px] text-neutral-600 dark:border-white/[0.08] dark:text-[#A5ADBC]">
+      <h2 className="font-semibold">{t("rulesPriorityTitle")}</h2>
+      <p>{t("rulesPrioritySource")}</p>
+      <p>{t("rulesPriorityScope")}</p>
+      <p>{t("rulesPriorityOrder")}</p>
+    </div>
+  );
+
   if (rules.length === 0) {
     return (
       <div className="flex flex-col gap-3">
@@ -381,9 +394,12 @@ export default function Rules({ initialList }: { initialList?: DomainList | null
             {addButton}
           </div>
         )}
+        {priority}
       </div>
     );
   }
+
+  const displayedRules = [...rules].sort((a, b) => Number(isFallback(a)) - Number(isFallback(b)));
 
   return (
     <section className="flex flex-col gap-2">
@@ -412,8 +428,9 @@ export default function Rules({ initialList }: { initialList?: DomainList | null
           {refreshError}
         </p>
       )}
+      {priority}
       <ul className="overflow-hidden rounded-lg border border-black/[0.08] dark:border-white/[0.08]">
-        {rules.map((rule) => (
+        {displayedRules.map((rule) => (
           <li
             key={rule.id}
             className="group flex items-center gap-3 border-black/[0.08] bg-black/[0.015] px-3 py-2.5 not-first:border-t hover:bg-black/[0.04] dark:border-white/[0.08] dark:bg-white/[0.02] dark:hover:bg-white/[0.05]"
@@ -524,8 +541,6 @@ export default function Rules({ initialList }: { initialList?: DomainList | null
           </li>
         ))}
       </ul>
-
-      <p className="text-[11px] text-neutral-400 dark:text-[#646B7C]">{t("rulesFooter")}</p>
     </section>
   );
 }

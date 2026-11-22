@@ -485,11 +485,40 @@ fn the_language_handed_to_the_screen_obeys_the_explicit_choice() {
     assert_eq!(spoken(&english), "en");
 }
 
-fn scratch(name: &str) -> std::path::PathBuf {
+pub(crate) fn scratch(name: &str) -> std::path::PathBuf {
     let dir = std::env::temp_dir().join(format!("linkunbound-cmd-{name}-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).expect("should create");
     dir
+}
+
+#[test]
+fn preference_patches_keep_other_choices_and_distinguish_a_cleared_shortcut() {
+    let dir = scratch("preferences-patch");
+    let store = Store::at(&dir);
+    store
+        .edit_prefs(|kept| {
+            kept.welcomed = true;
+            kept.shortcut = Some("Alt+F9".to_owned());
+            true
+        })
+        .unwrap();
+
+    let patch = |json| serde_json::from_str(json).unwrap();
+    assert!(
+        !super::write_preferences(&store, patch(r#"{"domain_lists_refresh_hours":1}"#)).unwrap()
+    );
+    assert!(
+        super::write_preferences(&store, patch(r#"{"domain_lists_auto_refresh":true}"#)).unwrap()
+    );
+    assert_eq!(store.prefs().shortcut.as_deref(), Some("Alt+F9"));
+
+    assert!(!super::write_preferences(&store, patch(r#"{"shortcut":null}"#)).unwrap());
+    let saved = store.prefs();
+    assert!(saved.domain_lists_auto_refresh);
+    assert_eq!(saved.domain_lists_refresh_hours, 6);
+    assert!(saved.shortcut.is_none());
+    assert!(saved.welcomed);
 }
 
 /// `SCHEMA_VERSION` exists so a newer file is recognised rather than parsed.

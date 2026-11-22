@@ -17,7 +17,7 @@ use linkunbound_core::{
     Browser, Language, Preferences, Rule, Scope, Store, Strings, Target, host_of, is_public_suffix,
     merge, normalise, same_name, site_of,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager};
 
 #[cfg(any(windows, target_os = "macos"))]
@@ -580,29 +580,79 @@ fn spoken(prefs: &Preferences) -> &'static str {
     }
 }
 
-#[tauri::command]
-fn prefs_set(app: AppHandle, prefs: Preferences) -> Result<Settings, String> {
-    let mut settled = prefs;
-    settled.domain_lists_refresh_hours = settled.domain_lists_refresh_hours.clamp(6, 168);
+#[derive(Deserialize)]
+struct PreferencesPatch {
+    theme: Option<linkunbound_core::Theme>,
+    locale: Option<linkunbound_core::Locale>,
+    #[serde(default, deserialize_with = "shortcut_patch")]
+    shortcut: Option<Option<String>>,
+    notify_on_rule: Option<bool>,
+    edge_warning_dismissed: Option<bool>,
+    picker_style: Option<linkunbound_core::PickerStyle>,
+    picker_position: Option<linkunbound_core::PickerPosition>,
+    looks_for_updates: Option<bool>,
+    domain_lists_enabled: Option<bool>,
+    domain_lists_auto_refresh: Option<bool>,
+    domain_lists_refresh_hours: Option<u16>,
+}
+
+// A missing field keeps the shortcut. An explicit JSON null turns it off.
+fn shortcut_patch<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<Option<String>>, D::Error> {
+    Option::<String>::deserialize(deserializer).map(Some)
+}
+
+impl PreferencesPatch {
+    fn apply(self, prefs: &mut Preferences) {
+        prefs.theme = self.theme.unwrap_or(prefs.theme);
+        prefs.locale = self.locale.unwrap_or(prefs.locale);
+        if let Some(shortcut) = self.shortcut {
+            prefs.shortcut = shortcut;
+        }
+        prefs.notify_on_rule = self.notify_on_rule.unwrap_or(prefs.notify_on_rule);
+        prefs.edge_warning_dismissed = self
+            .edge_warning_dismissed
+            .unwrap_or(prefs.edge_warning_dismissed);
+        prefs.picker_style = self.picker_style.unwrap_or(prefs.picker_style);
+        prefs.picker_position = self.picker_position.unwrap_or(prefs.picker_position);
+        prefs.looks_for_updates = self.looks_for_updates.unwrap_or(prefs.looks_for_updates);
+        prefs.domain_lists_enabled = self
+            .domain_lists_enabled
+            .unwrap_or(prefs.domain_lists_enabled);
+        prefs.domain_lists_auto_refresh = self
+            .domain_lists_auto_refresh
+            .unwrap_or(prefs.domain_lists_auto_refresh);
+        if let Some(hours) = self.domain_lists_refresh_hours {
+            prefs.domain_lists_refresh_hours = hours.clamp(6, 168);
+        }
+    }
+}
+
+fn write_preferences(
+    store: &linkunbound_core::Store,
+    patch: PreferencesPatch,
+) -> Result<bool, linkunbound_core::StoreError> {
     let mut refresh_lists = false;
-    store()
-        .edit_prefs(|kept| {
-            refresh_lists = settled.domain_lists_enabled
-                && settled.domain_lists_auto_refresh
-                && (!kept.domain_lists_enabled
-                    || !kept.domain_lists_auto_refresh
-                    || kept.domain_lists_refresh_hours != settled.domain_lists_refresh_hours);
-            settled.here_since = kept.here_since;
-            settled.asked_for_a_star = kept.asked_for_a_star;
-            settled.news_seen.clone_from(&kept.news_seen);
-            settled.welcomed = kept.welcomed;
-            *kept = settled.clone();
-            true
-        })
-        .map_err(|e| e.to_string())?;
-    if refresh_lists {
+    store.edit_prefs(|kept| {
+        let was_enabled = kept.domain_lists_enabled && kept.domain_lists_auto_refresh;
+        let previous_hours = kept.domain_lists_refresh_hours;
+        patch.apply(kept);
+        refresh_lists = kept.domain_lists_enabled
+            && kept.domain_lists_auto_refresh
+            && (!was_enabled || previous_hours != kept.domain_lists_refresh_hours);
+        true
+    })?;
+    Ok(refresh_lists)
+}
+
+#[tauri::command]
+fn prefs_set(app: AppHandle, patch: PreferencesPatch) -> Result<Settings, String> {
+    let settings_store = store();
+    if write_preferences(&settings_store, patch).map_err(|e| e.to_string())? {
         tauri::async_runtime::spawn_blocking(|| domain_lists::refresh_due(&store()));
     }
+    let settled = settings_store.prefs();
     shell::repaint(&app, settled.theme);
     Ok(claim(&settled))
 }

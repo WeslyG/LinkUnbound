@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { follow } from "../theme";
@@ -61,27 +61,37 @@ describe("application settings", () => {
 
   it("lets the user choose an interval before permitting background list downloads", async () => {
     const otherwise = invoke.getMockImplementation();
-    invoke.mockImplementation((cmd: string, payload?: { prefs: typeof PREFS }) =>
-      cmd === "prefs_set"
-        ? Promise.resolve({ prefs: payload?.prefs, shortcut_held: "Alt+Shift+L" })
-        : otherwise?.(cmd),
-    );
+    let prefs = PREFS;
+    let saveInterval = () => {};
+    const intervalPending = new Promise<void>((resolve) => {
+      saveInterval = resolve;
+    });
+    invoke.mockImplementation(async (cmd: string, payload?: { patch: Partial<typeof PREFS> }) => {
+      if (cmd !== "prefs_set") return otherwise?.(cmd);
+      if (payload?.patch.domain_lists_refresh_hours) await intervalPending;
+      prefs = { ...prefs, ...payload?.patch };
+      return { prefs, shortcut_held: "Alt+Shift+L" };
+    });
     mount();
     const permission = await screen.findByRole("switch", {
       name: "Permitir actualizaciones automáticas",
     });
     expect(permission).not.toBeChecked();
-    await userEvent.selectOptions(
-      screen.getByRole("combobox", { name: "Actualizar una copia con más de" }),
-      "48",
-    );
+    const interval = screen.getByRole("combobox", { name: "Actualizar una copia con más de" });
+    await userEvent.selectOptions(interval, "48");
     expect(invoke).toHaveBeenCalledWith("prefs_set", {
-      prefs: { ...PREFS, domain_lists_refresh_hours: 48 },
+      patch: { domain_lists_refresh_hours: 48 },
     });
     await userEvent.click(permission);
-    expect(invoke).toHaveBeenCalledWith("prefs_set", {
-      prefs: { ...PREFS, domain_lists_auto_refresh: true, domain_lists_refresh_hours: 48 },
+    expect(invoke).not.toHaveBeenCalledWith("prefs_set", {
+      patch: { domain_lists_auto_refresh: true },
     });
+    await act(async () => saveInterval());
+    expect(invoke).toHaveBeenCalledWith("prefs_set", {
+      patch: { domain_lists_auto_refresh: true },
+    });
+    expect(interval).toHaveValue("48");
+    expect(permission).toBeChecked();
   });
 
   it("locks picker controls when unmatched links have a destination", async () => {
@@ -118,7 +128,7 @@ describe("application settings", () => {
     expect(picker.getByRole("radio", { name: "Clásico" })).toBeChecked();
     await userEvent.click(picker.getByRole("radio", { name: "Mosaico" }));
     expect(invoke).toHaveBeenCalledWith("prefs_set", {
-      prefs: { ...PREFS, picker_style: "sheet" },
+      patch: { picker_style: "sheet" },
     });
   });
 
@@ -129,7 +139,7 @@ describe("application settings", () => {
     expect(where.getByRole("radio", { name: "Junto al puntero" })).toBeChecked();
     await userEvent.click(where.getByRole("radio", { name: "Al centro" }));
     expect(invoke).toHaveBeenCalledWith("prefs_set", {
-      prefs: { ...PREFS, picker_position: "center" },
+      patch: { picker_position: "center" },
     });
   });
 
@@ -167,7 +177,7 @@ describe("application settings", () => {
     expect(look).toBeChecked();
     await userEvent.click(look);
     expect(invoke).toHaveBeenCalledWith("prefs_set", {
-      prefs: { ...PREFS, looks_for_updates: false },
+      patch: { looks_for_updates: false },
     });
   });
 
@@ -175,7 +185,7 @@ describe("application settings", () => {
     mount();
     await userEvent.click(await screen.findByRole("radio", { name: "Oscuro" }));
     expect(invoke).toHaveBeenCalledWith("prefs_set", {
-      prefs: { ...PREFS, theme: "dark" },
+      patch: { theme: "dark" },
     });
   });
 
@@ -197,9 +207,9 @@ describe("application settings", () => {
     const button = await screen.findByRole("button", { name: "Alt+Shift+L" });
     await userEvent.click(button);
     fireEvent.keyDown(button, { code: "KeyB", ctrlKey: true, altKey: true });
-    expect(invoke).toHaveBeenCalledWith("prefs_set", {
-      prefs: { ...PREFS, shortcut: "Control+Alt+B" },
-    });
+    await waitFor(() =>
+      expect(invoke).toHaveBeenCalledWith("prefs_set", { patch: { shortcut: "Control+Alt+B" } }),
+    );
   });
 
   /// A lone letter would swallow every B the user types anywhere else.
@@ -216,7 +226,9 @@ describe("application settings", () => {
     const button = await screen.findByRole("button", { name: "Alt+Shift+L" });
     await userEvent.click(button);
     fireEvent.keyDown(button, { code: "F9" });
-    expect(invoke).toHaveBeenCalledWith("prefs_set", { prefs: { ...PREFS, shortcut: "F9" } });
+    await waitFor(() =>
+      expect(invoke).toHaveBeenCalledWith("prefs_set", { patch: { shortcut: "F9" } }),
+    );
   });
 
   it("says when another application already holds the combination", async () => {
@@ -235,7 +247,7 @@ describe("application settings", () => {
   it("turns the shortcut off when it is removed", async () => {
     mount();
     await userEvent.click(await screen.findByRole("button", { name: "Quitar" }));
-    expect(invoke).toHaveBeenCalledWith("prefs_set", { prefs: { ...PREFS, shortcut: null } });
+    expect(invoke).toHaveBeenCalledWith("prefs_set", { patch: { shortcut: null } });
   });
 
   it("asks again after a change of combination, once the resident has claimed it", async () => {
@@ -250,7 +262,7 @@ describe("application settings", () => {
       fireEvent.keyDown(button, { code: "KeyB", ctrlKey: true, altKey: true });
       await vi.waitFor(() =>
         expect(invoke).toHaveBeenCalledWith("prefs_set", {
-          prefs: { ...PREFS, shortcut: "Control+Alt+B" },
+          patch: { shortcut: "Control+Alt+B" },
         }),
       );
       invoke.mockClear();

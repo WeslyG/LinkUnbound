@@ -5,7 +5,7 @@ use std::time::Duration;
 use serde::{Deserialize, Serialize};
 
 use crate::StoreError;
-use crate::store::{guarded, save_atomically};
+use crate::store::{guarded, save_atomically, try_guarded};
 
 pub const MAX_BYTES: u64 = 2 * 1024 * 1024;
 
@@ -241,6 +241,20 @@ pub fn save_download(
     })
 }
 
+/// Keep concurrent refreshes from downloading the same list. Edits and cache
+/// reads use separate locks so the network request does not block them.
+pub fn try_refresh<T>(
+    dir: &Path,
+    source: &ListSource,
+    work: impl FnOnce() -> T,
+) -> Result<Option<T>, StoreError> {
+    assert!(valid_id(&source.id), "validated list identifier");
+    try_guarded(
+        &cache_path(dir, &source.id).with_extension("refresh.lock"),
+        work,
+    )
+}
+
 pub fn with_source(
     dir: &Path,
     id: &str,
@@ -365,6 +379,14 @@ pub fn matches(domains: &HashSet<String>, host: &str) -> bool {
 }
 
 pub fn due_for(store: &crate::Store) -> Vec<ListSource> {
+    due_sources(store, |_| true)
+}
+
+pub fn due_list(store: &crate::Store, id: &str) -> Option<ListSource> {
+    due_sources(store, |list| list.id == id).into_iter().next()
+}
+
+fn due_sources(store: &crate::Store, includes: impl Fn(&ListSource) -> bool) -> Vec<ListSource> {
     let prefs = store.prefs();
     if !prefs.domain_lists_enabled || !prefs.domain_lists_auto_refresh {
         return Vec::new();
@@ -376,7 +398,8 @@ pub fn due_for(store: &crate::Store) -> Vec<ListSource> {
     sources(store.dir())
         .into_iter()
         .filter(|list| {
-            list.url.is_some()
+            includes(list)
+                && list.url.is_some()
                 && due(store.dir(), &list.id, interval)
                 && rules
                     .rules

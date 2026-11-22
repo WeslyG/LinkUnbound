@@ -1,6 +1,6 @@
 use super::{
     Arrival, FRONT_SETTLES_WITHIN, INPUT_SETTLES_WITHIN, Listed, Shown, UI, Ui, WAITING_ROOM,
-    claims_the_window, host, link_from, next_in_line, physical, present, still_settling, too_soon,
+    claims_the_window, host, link_from, physical, present, show_queued, still_settling, too_soon,
     wants_no_window, with_icons,
 };
 use linkunbound_core::{Language, normalise};
@@ -166,7 +166,10 @@ fn a_link_over_a_picker_nobody_answers_takes_its_place_and_the_queue_follows() {
         .borrow_mut()
         .waiting
         .push_back(arrive("https://three.test/"));
-    next_in_line(&ui.picker, &words, &ui.shown);
+    show_queued(&ui.picker, &words, &ui.shown, |url, _| {
+        assert_eq!(url, "https://three.test/");
+        None
+    });
     assert!(ui.picker.window().is_visible());
     assert_eq!(
         ui.shown.borrow().url.as_deref(),
