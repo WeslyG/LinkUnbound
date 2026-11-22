@@ -1,4 +1,4 @@
-name: npm dependency inventory
+name: Dependency inventory
 
 on:
   schedule:
@@ -17,6 +17,27 @@ permissions:
   contents: read
 
 jobs:
+  cargo:
+    name: Compatible Cargo updates
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Resolve the whole Cargo lockfile once
+        shell: bash
+        run: |
+          report="$RUNNER_TEMP/cargo-update.txt"
+          cargo update --dry-run --color never 2>&1 | tee "$report"
+          git diff --exit-code -- Cargo.lock
+          {
+            printf '### Compatible Cargo updates\n\n'
+            printf '%s\n' '```'
+            cat "$report"
+            printf '%s\n' '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
   outdated:
     name: npm inventory / ${{ matrix.directory }}
     runs-on: ubuntu-latest

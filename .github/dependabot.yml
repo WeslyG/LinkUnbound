@@ -24,7 +24,8 @@ updates:
     multi-ecosystem-group: monthly-dependencies
     patterns: ["*"]
     allow:
-      - dependency-type: all
+      # The inventory workflow resolves compatible transitive updates in one Cargo run.
+      - dependency-type: direct
     cooldown:
       default-days: 7
     # Tauri, Slint and tray-icon must share a single muda on macOS. Upgrade
