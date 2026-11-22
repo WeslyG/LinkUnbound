@@ -1,0 +1,71 @@
+name: Update Homebrew cask
+
+on:
+  release:
+    types: [published]
+  workflow_run:
+    workflows: [Release builds]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: update-homebrew-cask
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: >-
+      github.repository == 'WeslyG/LinkUnbound' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'release' && !github.event.release.prerelease) ||
+       (github.event_name == 'workflow_run' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.conclusion == 'success'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: WeslyG/homebrew-tap
+          ref: main
+          path: homebrew-tap
+          ssh-key: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}
+      - name: Verify latest stable release and render the cask
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node .github/scripts/update-homebrew-cask.mjs homebrew-tap/Casks/weslyg-linkunbound.rb
+      - name: Test a stale cask and SSH write access without pushing
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cask=homebrew-tap/Casks/weslyg-linkunbound.rb
+          fixture="$RUNNER_TEMP/weslyg-linkunbound.rb"
+          sed -E 's/^  version "[^"]+"/  version "0.0.0"/; /^  sha256 arm:|^ +intel:/ s/[0-9a-f]{64}/0000000000000000000000000000000000000000000000000000000000000000/' "$cask" > "$fixture"
+          node .github/scripts/update-homebrew-cask.mjs "$fixture"
+          cmp "$cask" "$fixture"
+          git -C homebrew-tap -c user.name=github-actions -c user.email=41898282+github-actions[bot]@users.noreply.github.com \
+            commit --allow-empty -m "Test Homebrew tap write access"
+          git -C homebrew-tap push --dry-run origin HEAD:refs/heads/main
+      - name: Commit and push cask update
+        if: github.event_name != 'workflow_dispatch'
+        working-directory: homebrew-tap
+        run: |
+          set -euo pipefail
+          cask=Casks/weslyg-linkunbound.rb
+          if git diff --quiet -- "$cask"; then
+            exit 0
+          fi
+          version=$(sed -n 's/^  version "\(.*\)"$/\1/p' "$cask")
+          git add -- "$cask"
+          git -c user.name=github-actions -c user.email=41898282+github-actions[bot]@users.noreply.github.com \
+            commit -m "Update LinkUnbound to $version"
+          git push origin HEAD:refs/heads/main
