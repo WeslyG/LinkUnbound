@@ -3,11 +3,11 @@ use windows::core::HSTRING;
 use winreg::RegKey;
 use winreg::enums::{HKEY_CURRENT_USER, KEY_READ, KEY_WRITE};
 
-const TASK_ID: &str = "LinkUnboundStartup";
+const TASK_ID: &str = "LinkUnboundWeslyGStartup";
 const RUN: &str = r"Software\Microsoft\Windows\CurrentVersion\Run";
 /// The resident is what has to be there at sign-in: it owns the tray and the shortcut, and it is
 /// what makes the first link of a session open without waiting for a cold start.
-const RUN_NAME: &str = "LinkUnbound";
+const RUN_NAME: &str = "LinkUnboundWeslyG";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Startup {

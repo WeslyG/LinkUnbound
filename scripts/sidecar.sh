@@ -5,7 +5,8 @@ cd "$(dirname "$0")/.."
 
 host=$(rustc -vV | sed -n 's/^host: //p')
 suffix=""
-case "$host" in *windows*) suffix=".exe" ;; esac
+name=linkunbound-shell
+case "$host" in *windows*) suffix=".exe"; name=linkunbound-weslyg-shell ;; esac
 
 profile="${1:-debug}"
 target="${2:-}"
@@ -35,6 +36,6 @@ if [ "$target" = "universal-apple-darwin" ]; then
   lipo -archs "$out/linkunbound-shell-$target"
 else
   built=$(build "$target" | tail -1)
-  cp "$built" "$out/linkunbound-shell-${target:-$host}$suffix"
+  cp "$built" "$out/$name-${target:-$host}$suffix"
 fi
-echo "$out/linkunbound-shell-${target:-$host}$suffix"
+echo "$out/$name-${target:-$host}$suffix"

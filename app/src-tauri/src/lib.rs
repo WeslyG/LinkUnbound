@@ -1,6 +1,8 @@
 mod about;
 mod domain_lists;
 mod editing;
+#[cfg(windows)]
+mod migration;
 mod news;
 mod shell;
 mod shop;
@@ -1172,6 +1174,11 @@ pub fn run() {
             }
 
             if args.iter().any(|a| a == "--register") {
+                #[cfg(windows)]
+                if migration::import().is_err() {
+                    app.handle().exit(1);
+                    return Ok(());
+                }
                 app.handle()
                     .exit(i32::from(!system::register_for_the_installer()));
                 return Ok(());

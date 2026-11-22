@@ -213,7 +213,12 @@ pub fn data_dir() -> PathBuf {
 }
 
 fn under(base: Option<PathBuf>) -> PathBuf {
-    base.unwrap_or_else(std::env::temp_dir).join("LinkUnbound")
+    base.unwrap_or_else(std::env::temp_dir)
+        .join(if cfg!(windows) {
+            "LinkUnboundWeslyG"
+        } else {
+            "LinkUnbound"
+        })
 }
 
 #[cfg(windows)]
@@ -510,14 +515,25 @@ mod tests {
     #[test]
     fn the_files_live_in_a_directory_of_their_own() {
         let home = under(Some(PathBuf::from("/somewhere")));
-        assert_eq!(home, Path::new("/somewhere").join("LinkUnbound"));
+        assert_eq!(
+            home,
+            Path::new("/somewhere").join(if cfg!(windows) {
+                "LinkUnboundWeslyG"
+            } else {
+                "LinkUnbound"
+            })
+        );
     }
 
     #[test]
     fn the_data_lives_where_the_readme_says() {
         let dir = data_dir();
         assert!(dir.is_absolute());
-        assert!(dir.ends_with("LinkUnbound"));
+        assert!(dir.ends_with(if cfg!(windows) {
+            "LinkUnboundWeslyG"
+        } else {
+            "LinkUnbound"
+        }));
         if cfg!(target_os = "macos") {
             assert!(dir.starts_with(std::env::var_os("HOME").expect("a home")));
             assert!(
@@ -531,7 +547,11 @@ mod tests {
     fn a_system_that_names_no_home_still_yields_somewhere_absolute() {
         let nowhere = under(None);
         assert!(nowhere.is_absolute(), "{nowhere:?}");
-        assert!(nowhere.ends_with("LinkUnbound"));
+        assert!(nowhere.ends_with(if cfg!(windows) {
+            "LinkUnboundWeslyG"
+        } else {
+            "LinkUnbound"
+        }));
     }
 
     /// Only a file that is not there is a first run. Anything else that stops the read is a

@@ -26,8 +26,8 @@ fn pipe_name(sid: Option<&str>, session: Option<u32>) -> String {
         str::to_owned,
     );
     match session {
-        Some(session) => format!("linkunbound-{user}-{session}.sock"),
-        None => format!("linkunbound-{user}.sock"),
+        Some(session) => format!("linkunbound-weslyg-{user}-{session}.sock"),
+        None => format!("linkunbound-weslyg-{user}.sock"),
     }
 }
 
@@ -346,14 +346,14 @@ mod tests {
     fn the_pipe_is_named_after_the_account_and_the_session_not_the_user_name() {
         assert_eq!(
             super::pipe_name(Some("S-1-5-21-1-2-3-1001"), Some(2)),
-            "linkunbound-S-1-5-21-1-2-3-1001-2.sock"
+            "linkunbound-weslyg-S-1-5-21-1-2-3-1001-2.sock"
         );
         assert_ne!(
             super::pipe_name(Some("S-1-5-21-1-2-3-1001"), Some(1)),
             super::pipe_name(Some("S-1-5-21-1-2-3-1001"), Some(2)),
             "one account signed in twice keeps two residents apart"
         );
-        assert!(super::address().starts_with("linkunbound-S-1-"));
+        assert!(super::address().starts_with("linkunbound-weslyg-S-1-"));
     }
 
     /// Another account can take the name before the resident does. Its pipe answers, but the

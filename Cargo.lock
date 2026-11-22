@@ -3609,7 +3609,7 @@ checksum = "4d9aae57673c1a235149777a74d152f3210ebd3e3b13346d2cdb6809e566bd3c"
 
 [[package]]
 name = "linkunbound-core"
-version = "2.1.0"
+version = "2.1.1"
 dependencies = [
  "percent-encoding",
  "psl",
@@ -3623,7 +3623,7 @@ dependencies = [
 
 [[package]]
 name = "linkunbound-mac"
-version = "2.1.0"
+version = "2.1.1"
 dependencies = [
  "block2 0.6.2",
  "libc",
@@ -3641,7 +3641,7 @@ dependencies = [
 
 [[package]]
 name = "linkunbound-settings"
-version = "2.1.0"
+version = "2.1.1"
 dependencies = [
  "base64 0.23.1",
  "linkunbound-core",
@@ -3664,7 +3664,7 @@ dependencies = [
 
 [[package]]
 name = "linkunbound-shell"
-version = "2.1.0"
+version = "2.1.1"
 dependencies = [
  "embed-manifest",
  "global-hotkey",
@@ -3685,7 +3685,7 @@ dependencies = [
 
 [[package]]
 name = "linkunbound-win"
-version = "2.1.0"
+version = "2.1.1"
 dependencies = [
  "linkunbound-core",
  "png 0.18.1",

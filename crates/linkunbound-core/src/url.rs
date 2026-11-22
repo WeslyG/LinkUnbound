@@ -43,7 +43,7 @@ pub fn unwrap_own_scheme(raw: &str) -> String {
     let Ok(url) = Url::parse(raw) else {
         return raw.to_owned();
     };
-    if url.scheme() != OWN_SCHEME {
+    if !own_scheme(url.scheme()) {
         return raw.to_owned();
     }
     let addressed_to_open = url
@@ -70,6 +70,11 @@ pub fn unwrap_own_scheme(raw: &str) -> String {
     }
 }
 
+fn own_scheme(scheme: &str) -> bool {
+    scheme.eq_ignore_ascii_case(OWN_SCHEME)
+        || cfg!(windows) && scheme.eq_ignore_ascii_case("linkunbound-weslyg")
+}
+
 fn hides_characters(said: &str) -> bool {
     said.chars().any(char::is_control) || said.trim() != said
 }
@@ -78,8 +83,8 @@ fn hides_characters(said: &str) -> bool {
 #[must_use]
 pub fn is_own_scheme(raw: &str) -> bool {
     raw.trim_start()
-        .get(..OWN_SCHEME.len() + 1)
-        .is_some_and(|head| head.eq_ignore_ascii_case(&format!("{OWN_SCHEME}:")))
+        .split_once(':')
+        .is_some_and(|(scheme, _)| own_scheme(scheme))
 }
 
 /// `github.com.` is the same site to the browser: every reading of a host agrees on it without

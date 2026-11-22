@@ -66,14 +66,19 @@ jobs:
           $PSNativeCommandUseErrorActionPreference = $true
           cargo build --locked --release --bin linkunbound-shell
           New-Item -ItemType Directory -Path app/src-tauri/binaries -Force | Out-Null
-          Copy-Item target/release/linkunbound-shell.exe app/src-tauri/binaries/linkunbound-shell-x86_64-pc-windows-msvc.exe
+          Copy-Item target/release/linkunbound-shell.exe app/src-tauri/binaries/linkunbound-weslyg-shell-x86_64-pc-windows-msvc.exe
       - name: Bundle Windows x64
         working-directory: app
         run: npm run tauri -- build --bundles nsis
+      - name: Stage the Windows installer and check its identity
+        shell: pwsh
+        env:
+          VERSION: ${{ needs.build-version.outputs.version }}
+        run: ./.github/scripts/test-windows-installer.ps1
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: windows-nsis
-          path: target/release/bundle/nsis/LinkUnbound_${{ needs.build-version.outputs.version }}_x64-setup.exe
+          path: release-assets/LinkUnbound_${{ needs.build-version.outputs.version }}_x64-setup.exe
           if-no-files-found: error
           overwrite: true
           retention-days: 7

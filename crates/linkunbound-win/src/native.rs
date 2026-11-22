@@ -640,7 +640,10 @@ fn is_the_picker(path: &str) -> bool {
     Path::new(path)
         .file_stem()
         .and_then(|stem| stem.to_str())
-        .is_some_and(|stem| stem.eq_ignore_ascii_case("linkunbound-shell"))
+        .is_some_and(|stem| {
+            stem.eq_ignore_ascii_case("linkunbound-shell")
+                || stem.eq_ignore_ascii_case("linkunbound-weslyg-shell")
+        })
 }
 
 static LAST_SEEN: std::sync::Mutex<Option<String>> = std::sync::Mutex::new(None);

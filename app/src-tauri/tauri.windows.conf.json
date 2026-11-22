@@ -1,0 +1,11 @@
+{
+  "productName": "LinkUnbound (WeslyG)",
+  "identifier": "io.github.weslyg.linkunbound",
+  "mainBinaryName": "linkunbound-weslyg-settings",
+  "bundle": {
+    "publisher": "WeslyG",
+    "externalBin": [
+      "binaries/linkunbound-weslyg-shell"
+    ]
+  }
+}

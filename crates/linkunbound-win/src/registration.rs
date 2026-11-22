@@ -3,12 +3,12 @@ use winreg::enums::{
     HKEY_CLASSES_ROOT, HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, KEY_READ, KEY_WRITE,
 };
 
-use linkunbound_core::OWN_SCHEME;
+const BROWSER_SCHEME: &str = "linkunbound-weslyg";
 
 use crate::RegistrationError;
 
-pub const PROG_ID: &str = "LinkUnboundURL";
-const APP_NAME: &str = "LinkUnbound";
+pub const PROG_ID: &str = "LinkUnboundWeslyGURL";
+const APP_NAME: &str = "LinkUnbound (WeslyG)";
 const PACKAGED_APP_ID: &str = "LinkUnbound";
 const APP_DESCRIPTION: &str = "Browser picker for Windows";
 
@@ -103,7 +103,7 @@ impl Registration {
     fn write_own_scheme(&self, exe: &str) -> Result<(), RegistrationError> {
         let quoted_exe = quoted(exe);
         let (scheme, _) =
-            Self::hkcu().create_subkey(format!(r"{}\{OWN_SCHEME}", self.classes()))?;
+            Self::hkcu().create_subkey(format!(r"{}\{BROWSER_SCHEME}", self.classes()))?;
         scheme.set_value("", &"URL:LinkUnbound")?;
         scheme.set_value("URL Protocol", &"")?;
 
@@ -197,7 +197,7 @@ impl Registration {
     pub fn unregister(&self) -> Result<(), RegistrationError> {
         let hkcu = Self::hkcu();
         let _ = hkcu.delete_subkey_all(format!(r"{}\{PROG_ID}", self.classes()));
-        let _ = hkcu.delete_subkey_all(format!(r"{}\{OWN_SCHEME}", self.classes()));
+        let _ = hkcu.delete_subkey_all(format!(r"{}\{BROWSER_SCHEME}", self.classes()));
         let _ = hkcu.delete_subkey_all(format!(
             r"{}\Clients\StartMenuInternet\{APP_NAME}",
             self.root
@@ -241,7 +241,7 @@ impl Registration {
     pub fn own_scheme_command(&self) -> Option<String> {
         Self::hkcu()
             .open_subkey(format!(
-                r"{}\{OWN_SCHEME}\shell\open\command",
+                r"{}\{BROWSER_SCHEME}\shell\open\command",
                 self.classes()
             ))
             .and_then(|k| k.get_value::<String, _>(""))
@@ -336,7 +336,7 @@ fn default_apps_page_for(family: Option<&str>) -> String {
         Some(family) => {
             format!("ms-settings:defaultapps?registeredAUMID={family}!{PACKAGED_APP_ID}")
         }
-        None => format!("ms-settings:defaultapps?registeredAppUser={APP_NAME}"),
+        None => "ms-settings:defaultapps?registeredAppUser=LinkUnbound%20%28WeslyG%29".to_owned(),
     }
 }
 
@@ -458,9 +458,9 @@ mod tests {
         }
         assert!(
             hooks.contains(&format!(
-                r#"DeleteRegKey HKCU "Software\Classes\{OWN_SCHEME}""#
+                r#"DeleteRegKey HKCU "Software\Classes\{BROWSER_SCHEME}""#
             )),
-            "hooks.nsh leaves the {OWN_SCHEME}: scheme behind"
+            "hooks.nsh leaves the {BROWSER_SCHEME}: scheme behind"
         );
     }
 
@@ -468,7 +468,7 @@ mod tests {
     fn the_default_apps_page_names_whichever_copy_is_asking() {
         assert_eq!(
             default_apps_page_for(None),
-            "ms-settings:defaultapps?registeredAppUser=LinkUnbound"
+            "ms-settings:defaultapps?registeredAppUser=LinkUnbound%20%28WeslyG%29"
         );
         assert_eq!(
             default_apps_page_for(Some("rgdevment.LinkUnbound-BrowserPicker_kdjgfdc2rb3gc")),
@@ -488,10 +488,10 @@ mod tests {
             std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../app/src-tauri");
         let manifest = std::fs::read_to_string(src_tauri.join("msix/AppxManifest.xml.in"))
             .expect("the package manifest");
-        assert!(manifest.contains(&format!(r#"<uap3:Protocol Name="{OWN_SCHEME}""#)));
+        assert!(manifest.contains(r#"<uap3:Protocol Name="linkunbound""#));
         let plist =
             std::fs::read_to_string(src_tauri.join("Info.plist")).expect("the bundle plist");
-        assert!(plist.contains(&format!("<string>{OWN_SCHEME}</string>")));
+        assert!(plist.contains("<string>linkunbound</string>"));
     }
 
     #[test]
@@ -504,7 +504,7 @@ mod tests {
 
         let hkcu = RegKey::predef(HKEY_CURRENT_USER);
         let scheme = hkcu
-            .open_subkey(format!(r"{root}\Classes\{OWN_SCHEME}"))
+            .open_subkey(format!(r"{root}\Classes\{BROWSER_SCHEME}"))
             .expect("the scheme key");
         scheme
             .get_value::<String, _>("URL Protocol")
@@ -521,7 +521,7 @@ mod tests {
         reg.unregister().unwrap();
         assert_eq!(reg.own_scheme_command(), None);
         assert!(
-            hkcu.open_subkey(format!(r"{root}\Classes\{OWN_SCHEME}"))
+            hkcu.open_subkey(format!(r"{root}\Classes\{BROWSER_SCHEME}"))
                 .is_err()
         );
         scrub(&root);
@@ -787,7 +787,7 @@ mod tests {
 
     #[test]
     fn a_third_party_prog_id_embedding_our_name_is_not_ours() {
-        assert!(prog_id_is_ours("LinkUnboundURL"));
+        assert!(prog_id_is_ours("LinkUnboundWeslyGURL"));
         assert!(prog_id_is_ours("linkunboundurl"));
         assert!(!prog_id_is_ours("NotLinkUnboundURL"));
         assert!(!prog_id_is_ours("LinkUnboundURLPro"));

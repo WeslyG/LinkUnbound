@@ -10,7 +10,15 @@ pub const BROWSERS: &str = "--browsers";
 
 fn named(beside: &Path, stem: &str) -> PathBuf {
     let file = if cfg!(windows) {
-        format!("{stem}.exe")
+        let prefix = if std::env::current_exe().ok().is_some_and(|path| {
+            path.file_stem()
+                .is_some_and(|name| name.to_string_lossy().starts_with("linkunbound-weslyg-"))
+        }) {
+            "linkunbound-weslyg-"
+        } else {
+            "linkunbound-"
+        };
+        format!("{prefix}{}.exe", stem.trim_start_matches("linkunbound-"))
     } else {
         stem.to_owned()
     };

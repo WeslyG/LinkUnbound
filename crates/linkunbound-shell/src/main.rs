@@ -369,11 +369,7 @@ fn run_settings(args: &[&str]) -> bool {
     let Ok(here) = std::env::current_exe() else {
         return false;
     };
-    let beside = here.with_file_name(if cfg!(windows) {
-        "linkunbound-settings.exe"
-    } else {
-        "linkunbound-settings"
-    });
+    let beside = linkunbound_core::settings_binary(&here);
     let mut command = std::process::Command::new(beside);
     command.args(args);
     // A debug build of settings is a console program, and the console it would open is a
