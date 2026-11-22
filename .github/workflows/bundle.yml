@@ -100,7 +100,7 @@ jobs:
               status=1
             fi
           }
-          want 'oname=linkunbound-shell.exe' "lay down the resident; the sidecar was not bundled"
+          want 'oname=linkunbound-weslyg-shell.exe' "lay down the resident; the sidecar was not bundled"
           want '!include .*nsis.hooks\.nsh' "include our hooks; installerHooks did not resolve"
           exit $status
 
