@@ -2,11 +2,6 @@ $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
 $version = $env:VERSION
-$bundle = Get-ChildItem target/release/bundle/nsis -Filter "*_$($version)_x64-setup.exe"
-if (@($bundle).Count -ne 1) { throw 'Expected one Windows release installer' }
-New-Item -ItemType Directory -Path release-assets -Force | Out-Null
-Copy-Item -LiteralPath $bundle.FullName -Destination "release-assets/LinkUnbound_$($version)_x64-setup.exe"
-
 function Invoke-Installer($path, $arguments) {
     $process = Start-Process -FilePath $path -ArgumentList $arguments -WindowStyle Hidden -PassThru
     if (!$process.WaitForExit(90000) -or $process.ExitCode -ne 0) {
@@ -48,8 +43,13 @@ if ((Get-Content -Raw -LiteralPath $copied).Trim() -ne 'migration.example') {
 }
 Invoke-Installer $setup '/S /UPDATE'
 Invoke-Installer (Join-Path $installed 'uninstall.exe') '/S'
+# NSIS re-launches the uninstaller from a temporary directory.
+$deadline = [DateTime]::UtcNow.AddSeconds(30)
+while ((Test-Path -LiteralPath $newKey) -and [DateTime]::UtcNow -lt $deadline) {
+    Start-Sleep -Milliseconds 250
+}
 if ((Test-Path -LiteralPath $newKey) -or (Test-Path -LiteralPath (Join-Path $classes 'LinkUnboundWeslyGURL')) -or
     !(Test-Path -LiteralPath (Join-Path $registry 'LinkUnbound')) -or
     !(Test-Path -LiteralPath (Join-Path $classes 'LinkUnboundURL'))) {
-    throw 'Uninstall did not preserve the previous installation'
+    throw ('Uninstall verification failed. New package: {0}, new ProgID: {1}, old package: {2}, old ProgID: {3}' -f (Test-Path -LiteralPath $newKey), (Test-Path -LiteralPath (Join-Path $classes 'LinkUnboundWeslyGURL')), (Test-Path -LiteralPath (Join-Path $registry 'LinkUnbound')), (Test-Path -LiteralPath (Join-Path $classes 'LinkUnboundURL')))
 }

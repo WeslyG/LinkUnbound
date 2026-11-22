@@ -70,11 +70,15 @@ jobs:
       - name: Bundle Windows x64
         working-directory: app
         run: npm run tauri -- build --bundles nsis
-      - name: Stage the Windows installer and check its identity
+      - name: Stage the Windows installer
         shell: pwsh
         env:
           VERSION: ${{ needs.build-version.outputs.version }}
-        run: ./.github/scripts/test-windows-installer.ps1
+        run: |
+          $bundle = Get-ChildItem target/release/bundle/nsis -Filter "*_$($env:VERSION)_x64-setup.exe"
+          if (@($bundle).Count -ne 1) { throw 'Expected one Windows release installer' }
+          New-Item -ItemType Directory -Path release-assets -Force | Out-Null
+          Copy-Item -LiteralPath $bundle.FullName -Destination "release-assets/LinkUnbound_$($env:VERSION)_x64-setup.exe"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: windows-nsis
@@ -83,6 +87,24 @@ jobs:
           overwrite: true
           retention-days: 7
 
+
+  windows-install:
+    needs: [build-version, windows]
+    runs-on: windows-2025
+    timeout-minutes: 10
+    env:
+      VERSION: ${{ needs.build-version.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: windows-nsis
+          path: release-assets
+      - name: Check install, migration and uninstall
+        shell: pwsh
+        run: ./.github/scripts/test-windows-installer.ps1
 
   macos:
     needs: build-version
@@ -189,7 +211,7 @@ jobs:
           retention-days: 7
 
   sign:
-    needs: [build-version, windows, macos]
+    needs: [build-version, windows-install, macos]
     runs-on: windows-2025
     timeout-minutes: 10
     env:
