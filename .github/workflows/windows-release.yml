@@ -49,6 +49,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
+          package-manager-cache: false
       - uses: ./.github/actions/prepare
         with:
           version: ${{ needs.build-version.outputs.version }}
@@ -125,6 +126,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
+          package-manager-cache: false
       - uses: ./.github/actions/prepare
         with:
           version: ${{ env.VERSION }}
@@ -223,6 +225,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
+          package-manager-cache: false
       - run: npm ci --ignore-scripts
         working-directory: app
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -278,3 +281,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.build-version.outputs.version }}
         run: ./.github/scripts/publish-release.ps1
+
+  homebrew:
+    needs: publish
+    uses: ./.github/workflows/update-homebrew-cask.yml
+    secrets:
+      HOMEBREW_TAP_DEPLOY_KEY: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}
+
+  winget:
+    needs: publish
+    uses: ./.github/workflows/update-winget.yml
+    secrets:
+      WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}

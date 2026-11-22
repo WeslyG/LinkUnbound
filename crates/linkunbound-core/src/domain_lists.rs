@@ -119,15 +119,17 @@ pub fn save_source(
             custom[index].id.clone()
         } else {
             let epoch = crate::seconds_now().unwrap_or_default();
-            (0..)
+            (0..=u64::MAX)
                 .map(|index| format!("custom-{epoch}-{index}"))
                 .find(|id| {
                     !custom.iter().any(|list| &list.id == id) && !cache_path(dir, id).is_file()
                 })
-                .expect("the next unused list id")
+                .ok_or_else(|| StoreError::Write {
+                    path: path.clone(),
+                    source: std::io::Error::other("no available domain-list id"),
+                })?
         };
         let old = index.and_then(|_| read(dir, &id));
-        save(dir, &id, domains)?;
         let source = ListSource {
             id: id.clone(),
             name: Some(name),
@@ -138,10 +140,9 @@ pub fn save_source(
         } else {
             custom.push(source);
         }
-        let written = save_atomically(
-            &path,
-            &serde_json::to_string_pretty(&custom).expect("serializable sources"),
-        );
+        let data = encode_sources(&path, &custom)?;
+        save(dir, &id, domains)?;
+        let written = save_atomically(&path, &data);
         if written.is_err() {
             if let Some(old) = old {
                 let _ = save(dir, &id, &old.into_iter().collect::<Vec<_>>());
@@ -150,6 +151,13 @@ pub fn save_source(
             }
         }
         written.map(|()| true)
+    })
+}
+
+fn encode_sources(path: &Path, sources: &[ListSource]) -> Result<String, StoreError> {
+    serde_json::to_string_pretty(sources).map_err(|cause| StoreError::Write {
+        path: path.to_owned(),
+        source: std::io::Error::other(cause),
     })
 }
 
@@ -173,6 +181,8 @@ pub fn remove_source(
         else {
             return Ok(RemoveSource::Unknown);
         };
+        custom.remove(index);
+        let data = encode_sources(&path, &custom)?;
         let mut removed = Vec::new();
         let mut rules_changed = false;
         store.edit_rules(|rules| {
@@ -197,11 +207,7 @@ pub fn remove_source(
         if rules_changed {
             return Ok(RemoveSource::RulesChanged);
         }
-        custom.remove(index);
-        if let Err(error) = save_atomically(
-            &path,
-            &serde_json::to_string_pretty(&custom).expect("serializable sources"),
-        ) {
+        if let Err(error) = save_atomically(&path, &data) {
             if !removed.is_empty() {
                 store.edit_rules(|rules| {
                     for (index, rule) in removed {

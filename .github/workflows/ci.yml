@@ -321,6 +321,8 @@ jobs:
     # The Mac crate is skipped on a branch that never touched Rust, and Sonar still reads the window.
     if: >-
       !cancelled()
+      && vars.SONAR_PROJECT_KEY != ''
+      && vars.SONAR_ORGANIZATION != ''
       && needs.coverage.result == 'success'
       && (needs.coverage-mac.result == 'success' || needs.coverage-mac.result == 'skipped')
       && github.actor != 'dependabot[bot]'

@@ -24,7 +24,7 @@ also under About → Licence texts.
 | `scheduler` | 0.28.0 | MIT |
 | `uc.micro` | 3.0.0 | MIT |
 
-## In the core (363 crates)
+## In the core (364 crates)
 
 | Crate | Version | Licence |
 | --- | --- | --- |
@@ -103,7 +103,7 @@ also under About → Licence texts.
 | `fontique` | 0.11.1 | Apache-2.0 OR MIT |
 | `foreign-types-shared` | 0.3.1 | MIT/Apache-2.0 |
 | `foreign-types` | 0.5.0 | MIT/Apache-2.0 |
-| `form_urlencoded` | 1.2.2 | MIT OR Apache-2.0 |
+| `form_urlencoded` | 1.2.3 | MIT OR Apache-2.0 |
 | `futures-channel` | 0.3.34 | MIT OR Apache-2.0 |
 | `futures-core` | 0.3.34 | MIT OR Apache-2.0 |
 | `futures-io` | 0.3.34 | MIT OR Apache-2.0 |
@@ -112,6 +112,7 @@ also under About → Licence texts.
 | `futures-util` | 0.3.34 | MIT OR Apache-2.0 |
 | `getrandom` | 0.2.17 | MIT OR Apache-2.0 |
 | `getrandom` | 0.3.4 | MIT OR Apache-2.0 |
+| `getrandom` | 0.4.3 | MIT OR Apache-2.0 |
 | `gif` | 0.14.2 | MIT OR Apache-2.0 |
 | `glob` | 0.3.4 | MIT OR Apache-2.0 |
 | `global-hotkey` | 0.9.0 | Apache-2.0 OR MIT |
@@ -330,7 +331,7 @@ also under About → Licence texts.
 | `unicode-segmentation` | 1.13.3 | MIT OR Apache-2.0 |
 | `unicode-vo` | 0.1.0 | MIT/Apache-2.0 |
 | `untrusted` | 0.9.0 | ISC |
-| `url` | 2.5.8 | MIT OR Apache-2.0 |
+| `url` | 2.5.9 | MIT OR Apache-2.0 |
 | `urlpattern` | 0.6.0 | MIT |
 | `usvg` | 0.48.1 | Apache-2.0 OR MIT |
 | `utf8_iter` | 1.0.4 | Apache-2.0 OR MIT |

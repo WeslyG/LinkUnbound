@@ -48,6 +48,7 @@ ignore = [
   "RUSTSEC-2025-0098",
   "RUSTSEC-2025-0100",
   "RUSTSEC-2026-0441",
+  { id = "RUSTSEC-2026-0543", reason = "Unmaintained indirect dependency used by Slint 1.18.1. No vulnerability is reported." },
 ]
 
 [sources]
