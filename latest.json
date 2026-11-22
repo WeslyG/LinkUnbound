@@ -1,0 +1,11 @@
+{
+  "platforms": {
+    "windows-x86_64": {
+      "url": "https://github.com/WeslyG/LinkUnbound/releases/download/v2.1.0/LinkUnbound_2.1.0_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUY2pwcEYwdGhjZkFFV3NiV3Z1YlpJVEpZKzNCSnRmYkNKV2NaRWtNMy9aNnE3TUNHWnlBRnJjcVhXYjdUS05uRStIQktYU2pRazdtR2o1TFFsTWh1OWxmdEJaQXNJMXdBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk1MzI4OTM3CWZpbGU6TGlua1VuYm91bmRfMi4xLjBfeDY0LXNldHVwLmV4ZQl2ZXJzaW9uOjIuMS4wCllaejR6aHBkMUtRSUdrQTc3WStpbC9QVzNVdjl4a0lQOFhjSFBwUUU0NmVkcHlNSjBWNDNuelhCbWdqdjhKbjJ1S2FCK2FtMDQxcGVZeVBqMXE3SEFRPT0K"
+    }
+  },
+  "notes": "Первый релиз форка LinkUnbound для Windows x64.\n\n- Резервный браузер для ссылок без подходящего правила.\n- Русский и английский интерфейс с выбором языка в настройках.\n- Встроенные и пользовательские списки доменов с проверкой, кэшем и настраиваемым обновлением.\n- Правила для доменов внутри и вне списка. При удалении списка можно удалить связанные правила после подтверждения.\n- Убрана функция формирования отчётов. Обновления публикуются в этом форке.",
+  "version": "2.1.0",
+  "pub_date": "2026-11-22T06:29:21Z"
+}
