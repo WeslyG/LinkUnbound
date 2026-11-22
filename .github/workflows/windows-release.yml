@@ -1,0 +1,133 @@
+name: Windows release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.repository == 'WeslyG/LinkUnbound'
+    runs-on: windows-2025
+    timeout-minutes: 45
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - name: Set the package version
+        id: version
+        shell: pwsh
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $true
+          $cargo = Get-Content Cargo.toml -Raw
+          $pattern = '(?m)^version = "([^"]+)"'
+          if ([regex]::Matches($cargo, $pattern).Count -ne 1) { throw 'Expected one workspace version' }
+          $version = [regex]::Match($cargo, $pattern).Groups[1].Value
+          if ($env:GITHUB_EVENT_NAME -eq 'push') {
+            if ($env:GITHUB_REF_NAME -cnotmatch '^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$') {
+              throw 'Expected a stable tag such as v2.1.1'
+            }
+            $version = $env:GITHUB_REF_NAME.Substring(1)
+            cargo fetch --locked
+            [IO.File]::WriteAllText((Resolve-Path Cargo.toml).Path, ($cargo -replace $pattern, "version = ""$version"""))
+            cargo update --workspace --offline
+          }
+          "version=$version" >> $env:GITHUB_OUTPUT
+      - name: Test core
+        run: cargo test --locked -p linkunbound-core
+      - name: Test interface
+        working-directory: app
+        run: |
+          npm ci
+          npm exec -- vitest run
+      - name: Build the browser picker
+        shell: pwsh
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $true
+          cargo build --locked --release --bin linkunbound-shell
+          New-Item -ItemType Directory -Path app/src-tauri/binaries -Force | Out-Null
+          Copy-Item target/release/linkunbound-shell.exe app/src-tauri/binaries/linkunbound-shell-x86_64-pc-windows-msvc.exe
+      - name: Bundle Windows x64
+        working-directory: app
+        run: npm run tauri -- build --bundles nsis
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: windows-nsis
+          path: target/release/bundle/nsis/LinkUnbound_${{ steps.version.outputs.version }}_x64-setup.exe
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+
+  sign:
+    needs: build
+    runs-on: windows-2025
+    timeout-minutes: 10
+    env:
+      VERSION: ${{ needs.build.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts
+        working-directory: app
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: windows-nsis
+          path: release-assets
+      - name: Sign and verify the Tauri updater artifact
+        shell: pwsh
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $true
+          if (!$env:TAURI_SIGNING_PRIVATE_KEY -or !$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD) {
+            throw 'Tauri signing secrets are missing'
+          }
+          $installer = "release-assets/LinkUnbound_$($env:VERSION)_x64-setup.exe"
+          node app/node_modules/@tauri-apps/cli/tauri.js signer sign --app-version $env:VERSION $installer
+          node .github/scripts/verify-updater.cjs $installer $env:VERSION
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: signed-windows-nsis
+          path: release-assets/*
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+
+  publish:
+    if: github.event_name == 'push'
+    needs: [build, sign]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: signed-windows-nsis
+          path: release-assets
+      - name: Publish the release and update the stable manifest
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: ./.github/scripts/publish-windows.ps1
