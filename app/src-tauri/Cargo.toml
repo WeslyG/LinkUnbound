@@ -48,6 +48,7 @@ tauri-plugin-single-instance.workspace = true
 tauri-plugin-opener.workspace = true
 tauri-plugin-updater.workspace = true
 reqwest.workspace = true
+rustls.workspace = true
 semver.workspace = true
 serde_json.workspace = true
 url.workspace = true

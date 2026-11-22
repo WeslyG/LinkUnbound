@@ -72,7 +72,7 @@ fn source_url(value: &str) -> Result<url::Url, String> {
 
 fn download(url: url::Url) -> Result<Vec<String>, String> {
     let failed = || "ruleListDownloadFailed".to_owned();
-    let client = reqwest::blocking::Client::builder()
+    let client = crate::http::client()
         .redirect(reqwest::redirect::Policy::none())
         .timeout(Duration::from_secs(15))
         .build()

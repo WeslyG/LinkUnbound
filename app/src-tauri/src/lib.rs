@@ -1,6 +1,7 @@
 mod about;
 mod domain_lists;
 mod editing;
+mod http;
 #[cfg(windows)]
 mod migration;
 mod news;

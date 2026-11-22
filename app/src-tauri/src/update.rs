@@ -310,7 +310,7 @@ fn chosen(running: Option<&Path>, there: impl Fn(&Path) -> bool) -> Kept {
 }
 
 fn client() -> Option<reqwest::blocking::Client> {
-    reqwest::blocking::Client::builder()
+    crate::http::client()
         .timeout(PATIENCE)
         .user_agent(concat!("linkunbound/", env!("CARGO_PKG_VERSION")))
         .build()
