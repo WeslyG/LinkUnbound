@@ -49,6 +49,43 @@ function field(text, name, value) {
   return text.replace(pattern, (_, key) => key + " " + value);
 }
 
+
+if (process.argv[2] === "--verify-token") {
+  const token = process.env.WINGET_TOKEN;
+  if (!token) throw new Error("The repository secret WINGET_TOKEN is missing");
+
+  const response = await fetch("https://api.github.com/user", {
+    headers: { Authorization: "Bearer " + token, Accept: "application/vnd.github+json" },
+    signal: AbortSignal.timeout(25_000),
+  });
+  if (!response.ok) throw new Error("GitHub rejected WINGET_TOKEN: " + response.status);
+  const user = await response.json();
+  const scopes = (response.headers.get("x-oauth-scopes") ?? "").split(",").map((value) => value.trim());
+  if (user.login.toLowerCase() !== "weslyg" || !scopes.some((scope) => ["public_repo", "repo"].includes(scope))) {
+    throw new Error("WINGET_TOKEN must be a classic GitHub token for WeslyG with public_repo scope");
+  }
+
+  const repository = await api("repos/" + fork, { token });
+  if (repository.parent?.full_name !== catalog || !repository.permissions?.push) {
+    throw new Error("WINGET_TOKEN does not have write access to the existing WinGet fork");
+  }
+
+  // An empty base cannot refer to a branch, so the upstream endpoint can only reject this probe.
+  const probe = await fetch("https://api.github.com/repos/" + catalog + "/pulls", {
+    method: "POST",
+    headers: { Authorization: "Bearer " + token, Accept: "application/vnd.github+json", "Content-Type": "application/json" },
+    body: JSON.stringify({ title: "WinGet authentication validation", head: "WeslyG:master", base: "" }),
+    signal: AbortSignal.timeout(25_000),
+  });
+  const result = await probe.json();
+  if (probe.status !== 422 || !result.errors?.some((error) => error.field === "base")) {
+    throw new Error("Upstream PR validation did not return the expected invalid-base response: " + probe.status);
+  }
+  console.log("Confirmed WinGet fork write permission and upstream PR validation. No pull request was created.");
+  process.exit(0);
+}
+
+
 const published = await api("repos/" + source + "/releases/latest");
 const version = published.tag_name?.slice(1);
 if (published.prerelease || published.draft || !stable.test(version) || published.tag_name !== "v" + version) {

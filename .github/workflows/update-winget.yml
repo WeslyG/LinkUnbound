@@ -43,6 +43,16 @@ jobs:
           path: ${{ runner.temp }}/winget-manifests/*.yaml
           if-no-files-found: error
           retention-days: 7
+      - name: Verify WinGet token without opening a pull request
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+        run: |
+          if [ -n "$WINGET_TOKEN" ]; then
+            node .github/scripts/update-winget.mjs --verify-token
+          else
+            echo "::warning::Repository secret WINGET_TOKEN is missing. Manifest generation can still be tested."
+          fi
       - name: Open a WinGet update pull request
         if: github.event_name != 'workflow_dispatch'
         env:
