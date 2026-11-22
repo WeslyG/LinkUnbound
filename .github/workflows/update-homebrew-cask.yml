@@ -35,7 +35,7 @@ jobs:
           repository: WeslyG/homebrew-tap
           ref: main
           path: homebrew-tap
-          ssh-key: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}
+          persist-credentials: false
       - name: Verify latest stable release and render the cask
         env:
           GH_TOKEN: ${{ github.token }}
@@ -51,20 +51,37 @@ jobs:
           sed -E 's/^  version "[^"]+"/  version "0.0.0"/; /^  sha256 arm:|^ +intel:/ s/[0-9a-f]{64}/0000000000000000000000000000000000000000000000000000000000000000/' "$cask" > "$fixture"
           node .github/scripts/update-homebrew-cask.mjs "$fixture"
           cmp "$cask" "$fixture"
-          git -C homebrew-tap -c user.name=github-actions -c user.email=41898282+github-actions[bot]@users.noreply.github.com \
-            commit --allow-empty -m "Test Homebrew tap write access"
-          git -C homebrew-tap push --dry-run origin HEAD:refs/heads/main
-      - name: Commit and push cask update
-        if: github.event_name != 'workflow_dispatch'
+      - name: Push cask changes or test write access
         working-directory: homebrew-tap
+        env:
+          TAP_KEY: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}
         run: |
           set -euo pipefail
           cask=Casks/weslyg-linkunbound.rb
-          if git diff --quiet -- "$cask"; then
-            exit 0
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            git -c user.name=github-actions -c user.email=41898282+github-actions[bot]@users.noreply.github.com \
+              commit --allow-empty -m "Test Homebrew tap write access"
+          else
+            if git diff --quiet -- "$cask"; then
+              exit 0
+            fi
+            version=$(sed -n 's/^  version "\(.*\)"$/\1/p' "$cask")
+            git add -- "$cask"
+            git -c user.name=github-actions -c user.email=41898282+github-actions[bot]@users.noreply.github.com \
+              commit -m "Update LinkUnbound to $version"
           fi
-          version=$(sed -n 's/^  version "\(.*\)"$/\1/p' "$cask")
-          git add -- "$cask"
-          git -c user.name=github-actions -c user.email=41898282+github-actions[bot]@users.noreply.github.com \
-            commit -m "Update LinkUnbound to $version"
-          git push origin HEAD:refs/heads/main
+
+          umask 077
+          key=$(mktemp "$RUNNER_TEMP/tap-key.XXXXXX")
+          hosts=$(mktemp "$RUNNER_TEMP/tap-hosts.XXXXXX")
+          trap 'rm -f -- "$key" "$hosts"' EXIT
+          printf '%s\n' "$TAP_KEY" > "$key"
+          unset TAP_KEY
+          printf '%s\n' 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' > "$hosts"
+          export GIT_SSH_COMMAND="ssh -i '$key' -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile='$hosts'"
+          target=git@github.com:WeslyG/homebrew-tap.git
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            git push --dry-run "$target" HEAD:refs/heads/main
+          else
+            git push "$target" HEAD:refs/heads/main
+          fi
