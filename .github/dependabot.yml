@@ -1,42 +1,35 @@
 version: 2
 
+multi-ecosystem-groups:
+  monthly-dependencies:
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 1
+    commit-message:
+      prefix: "chore"
+      include: scope
+
 updates:
   - package-ecosystem: github-actions
     directories:
       - /
-      - /.github/actions/prepare
-      - /.github/actions/sidecar
-    schedule:
-      interval: monthly
-    open-pull-requests-limit: 3
+      - /.github/actions/*
+    multi-ecosystem-group: monthly-dependencies
+    patterns: ["*"]
     cooldown:
       default-days: 7
-    commit-message:
-      prefix: "chore"
-    groups:
-      actions:
-        patterns:
-          - "*"
-        update-types:
-          - minor
-          - patch
-      actions-majors:
-        patterns:
-          - "*"
-        update-types:
-          - major
 
   - package-ecosystem: cargo
     directory: /
-    schedule:
-      interval: monthly
-    open-pull-requests-limit: 3
+    multi-ecosystem-group: monthly-dependencies
+    patterns: ["*"]
+    allow:
+      - dependency-type: all
     cooldown:
       default-days: 7
-    commit-message:
-      prefix: "chore"
-    # slint pulls muda 0.19, and a second muda breaks the macOS LTO link on its duplicated Objective-C class.
-    # windows-future's types cross into the windows crate's Store API, so it moves only when windows does.
+    # Tauri, Slint and tray-icon must share a single muda on macOS. Upgrade
+    # them together when they use the same version of muda again.
+    # windows-future moves with windows because the Store API shares its types.
     ignore:
       - dependency-name: muda
       - dependency-name: tray-icon
@@ -44,64 +37,26 @@ updates:
         update-types:
           - version-update:semver-major
           - version-update:semver-minor
+      - dependency-name: "slint*"
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
       - dependency-name: "tauri*"
         update-types:
-          - version-update:semver-minor
           - version-update:semver-major
-    groups:
-      rust:
-        patterns:
-          - "*"
-        update-types:
-          - minor
-          - patch
-      rust-majors:
-        patterns:
-          - "*"
-        update-types:
-          - major
+          - version-update:semver-minor
 
   - package-ecosystem: npm
-    directory: /app
-    # package.json overrides qs under typed-rest-client 2.3.x (GHSA-x5fp-wj9c-mxmx, GHSA-4mjr-xmp4-gh2g); drop it once Stryker reaches typed-rest-client >= 3.1.1.
-    schedule:
-      interval: monthly
-    open-pull-requests-limit: 3
+    directories:
+      - /
+      - /app
+    multi-ecosystem-group: monthly-dependencies
+    patterns: ["*"]
     cooldown:
       default-days: 7
-    commit-message:
-      prefix: "chore"
-    # @stryker-mutator/vitest-runner 10 kills no mutant under vitest 5, so the mutation score reads 0.
+    # Move the picker API and CLI with the Rust Tauri stack.
     ignore:
       - dependency-name: "@tauri-apps/*"
         update-types:
+          - version-update:semver-major
           - version-update:semver-minor
-          - version-update:semver-major
-      - dependency-name: vitest
-        update-types:
-          - version-update:semver-major
-      - dependency-name: "@vitest/coverage-v8"
-        update-types:
-          - version-update:semver-major
-    groups:
-      picker:
-        patterns:
-          - "*"
-        update-types:
-          - minor
-          - patch
-      picker-majors:
-        patterns:
-          - "*"
-        update-types:
-          - major
-
-  - package-ecosystem: npm
-    directory: /
-    schedule:
-      interval: monthly
-    open-pull-requests-limit: 1
-    cooldown:
-      default-days: 7
-    commit-message:
-      prefix: "chore"

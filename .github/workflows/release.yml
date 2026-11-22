@@ -22,7 +22,7 @@ env:
 jobs:
   tested:
     name: Tested when it landed
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     # Past the longest chain CI can take: coverage's forty minutes, then Sonar's fifteen.
     timeout-minutes: 65
     permissions:
@@ -71,7 +71,7 @@ jobs:
   # Markdown and the picker's style are CI's on main, which the tested job waits for; the notices are read here.
   version:
     name: Resolve the version
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
       version: ${{ steps.resolve.outputs.version }}
@@ -202,7 +202,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         if: startsWith(github.ref, 'refs/tags/v')
         with:
-          node-version: 24
+          node-version-file: .nvmrc
           package-manager-cache: false
       - uses: ./.github/actions/toolchain
         if: startsWith(github.ref, 'refs/tags/v')
@@ -239,7 +239,7 @@ jobs:
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24
+          node-version-file: .nvmrc
           package-manager-cache: false
 
       - name: Frontend
@@ -479,7 +479,7 @@ jobs:
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24
+          node-version-file: .nvmrc
           package-manager-cache: false
 
       - name: Frontend
@@ -686,6 +686,11 @@ jobs:
           name: stage-windows
           path: msix
 
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        if: steps.gate.outputs.go == 'yes'
+        with:
+          python-version-file: .python-version
+
       - name: Lay the package out
         if: steps.gate.outputs.go == 'yes'
         shell: bash
@@ -779,7 +784,7 @@ jobs:
       && needs.tested.result == 'success'
       && needs.bundle-windows.result == 'success'
       && (needs.bundle-macos.result == 'success' || needs.bundle-macos.result == 'skipped')
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
@@ -787,12 +792,14 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          sparse-checkout: app/package-lock.json
+          sparse-checkout: |
+            .nvmrc
+            app/package-lock.json
           sparse-checkout-cone-mode: false
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24
+          node-version-file: .nvmrc
           package-manager-cache: false
 
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -866,7 +873,7 @@ jobs:
       && (needs.bundle-macos.result == 'success' || needs.bundle-macos.result == 'skipped')
       && (needs.bundle-msix.result == 'success' || needs.bundle-msix.result == 'skipped')
       && needs.sign-updater.result == 'success'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 60
     # Global: one manifest branch and one Latest flag; a third tag cancels the waiting one, re-run it by hand.
     concurrency:
@@ -952,7 +959,7 @@ jobs:
       - name: Checksums
         run: cd dist && sha256sum -- * > SHA256SUMS && cat SHA256SUMS
 
-      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: dist/linkunbound-*,dist/SHA256SUMS
 
@@ -1163,7 +1170,7 @@ jobs:
     if: >-
       !cancelled() && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
       && needs.version.result == 'success' && needs.publish.result == 'success'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1352,7 +1359,7 @@ jobs:
       && needs.version.result == 'success' && needs.publish.result == 'success'
       && needs.verify.result == 'success'
       && needs.version.outputs.macos == 'true'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     # Per tag: a global group cancels a pending tag, and the push loop already rebases over another.
     concurrency:
@@ -1491,7 +1498,7 @@ jobs:
       && needs.verify.result == 'success'
       && needs.version.outputs.prerelease == 'false'
       && vars.WINGET_PUBLISH == 'true'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     concurrency:
       group: release-winget-${{ github.ref }}
