@@ -1,11 +1,11 @@
 {
+  "notes": "- Установщик Windows регистрирует форк как отдельное приложение LinkUnbound (WeslyG), со своим браузером в настройках Windows.\n- Установщик переносит настройки, правила и кеш списков из подтверждённой версии форка 2.1.0. После перехода выберите LinkUnbound (WeslyG) браузером по умолчанию.\n- Добавлены установщики macOS для Apple Silicon и Intel.",
+  "version": "2.1.1",
+  "pub_date": "2026-11-22T08:50:26Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://github.com/WeslyG/LinkUnbound/releases/download/v2.1.1/LinkUnbound_2.1.1_x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUY2pwcEYwdGhjZk1Zc2dQZVgveGlzWC9PWURxMllMbjYrd3h1czFPYksyK01mU3JHNnpHSVc3UmNkWjJxOGlQTEtiVkd6eFFySFNqYTdqekFQcmVJQVN3ZWZlYkVNS2dnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk1MzM3MDA0CWZpbGU6TGlua1VuYm91bmRfMi4xLjFfeDY0LXNldHVwLmV4ZQl2ZXJzaW9uOjIuMS4xCmRBc3J6eW9iQkZmcWxzWHY5c2R5TUE2Uk83ZGdSS3pTT2E3RlFrdHhHSytCVy9ydkR6Vnl4SFFFYURLK2RPdVJiUC9UTXVIWTR3VjdoeU04K1o3aEN3PT0K"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUY2pwcEYwdGhjZk1Zc2dQZVgveGlzWC9PWURxMllMbjYrd3h1czFPYksyK01mU3JHNnpHSVc3UmNkWjJxOGlQTEtiVkd6eFFySFNqYTdqekFQcmVJQVN3ZWZlYkVNS2dnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk1MzM3MDA0CWZpbGU6TGlua1VuYm91bmRfMi4xLjFfeDY0LXNldHVwLmV4ZQl2ZXJzaW9uOjIuMS4xCmRBc3J6eW9iQkZmcWxzWHY5c2R5TUE2Uk83ZGdSS3pTT2E3RlFrdHhHSytCVy9ydkR6Vnl4SFFFYURLK2RPdVJiUC9UTXVIWTR3VjdoeU04K1o3aEN3PT0K",
+      "url": "https://github.com/WeslyG/LinkUnbound/releases/download/v2.1.1/LinkUnbound_2.1.1_x64-setup.exe"
     }
-  },
-  "pub_date": "2026-11-22T08:50:26Z",
-  "notes": "- Установщик Windows регистрирует форк как отдельное приложение LinkUnbound (WeslyG), со своим браузером в настройках Windows.\n- Установщик переносит настройки, правила и кеш списков из подтверждённой версии форка 2.1.0. После перехода выберите LinkUnbound (WeslyG) браузером по умолчанию.\n- Добавлены установщики macOS для Apple Silicon и Intel.",
-  "version": "2.1.1"
+  }
 }
