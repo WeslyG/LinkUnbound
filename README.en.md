@@ -15,13 +15,27 @@ When no rule matches, LinkUnbound can show a picker next to your pointer or open
 
 ## Getting started
 
-1. Download the installer from the [latest release](https://github.com/WeslyG/LinkUnbound/releases/latest). On Windows, choose the `_x64-setup.exe` file. If macOS builds are available, choose the `.dmg` marked `aarch64` for Apple Silicon or `x86_64` for Intel.
+1. Install LinkUnbound. On Windows, download the `_x64-setup.exe` file from the [latest release](https://github.com/WeslyG/LinkUnbound/releases/latest). On macOS, [install with Homebrew](#install-on-macos).
 2. Set LinkUnbound as your default browser in system settings.
 3. In LinkUnbound settings, create a rule for a site, address, or app, then choose a browser or profile. Set a fallback browser if you want links that match no rule to open automatically.
 
 This fork adds a **Russian interface**. On first launch LinkUnbound uses the system language when supported, with English as the default for other languages. The settings dropdown offers Russian, English, Spanish, and automatic selection.
 
 <p align="center"><img src="resources/assets/store/screenshots/en/03-rules.png" width="85%" alt="Settings for link routing rules"></p>
+
+## Install on macOS
+
+On macOS 13 or later, install LinkUnbound from [our Homebrew tap](https://github.com/WeslyG/homebrew-tap). Homebrew selects the Apple Silicon or Intel build automatically.
+
+```sh
+brew install --cask weslyg/tap/weslyg-linkunbound
+```
+
+Open **LinkUnbound** from **Applications**. The app is ad-hoc signed and has no Apple notarization. If macOS says it cannot verify the developer, dismiss the alert. Within an hour, go to **System Settings → Privacy & Security**, click **Open Anyway** for LinkUnbound, and confirm. This exception applies to LinkUnbound. [Apple instructions](https://support.apple.com/en-us/102445)
+
+For links from other apps to reach LinkUnbound, choose it under **System Settings → Desktop & Dock → Default web browser**. If you enable launch at login and macOS blocks it, check the permission under **System Settings → General → Login Items**.
+
+To update, run `brew update` followed by `brew upgrade --cask weslyg/tap/weslyg-linkunbound`. For a manual install, download the DMG from the [latest release](https://github.com/WeslyG/LinkUnbound/releases/latest), selecting `aarch64` for Apple Silicon or `x86_64` for Intel, and drag LinkUnbound to **Applications**. Use the same first-launch confirmation if prompted.
 
 ## Route several sites with one rule
 
@@ -51,7 +65,7 @@ Settings, rules, and the domain-list cache stay on your computer. LinkUnbound ha
 
 Add a non-empty `## [X.Y.Z] - YYYY-MM-DD` section to [CHANGELOG.md](CHANGELOG.md) and push the `vX.Y.Z` tag. [GitHub Actions](.github/workflows/windows-release.yml) builds Windows x64 and both macOS variants, signs the files with the Tauri key, publishes the installers, and copies that changelog section into the release description. It then updates the `manifest` branch. A manual run checks the artifacts without publishing.
 
-macOS self-updates require an Apple-notarized package. With no Apple notarization credentials, the release includes DMG images for manual installation.
+On macOS, update through Homebrew or reinstall from the latest DMG. In-app updates require Apple notarization.
 
 ---
 
