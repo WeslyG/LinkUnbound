@@ -15,7 +15,7 @@ concurrency:
 jobs:
   build-version:
     if: github.repository == 'WeslyG/LinkUnbound'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -23,6 +23,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
       - name: Determine version and validate the changelog
         id: version
         shell: pwsh
@@ -48,7 +52,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24
+          node-version-file: .nvmrc
           package-manager-cache: false
       - uses: ./.github/actions/prepare
         with:
@@ -109,7 +113,7 @@ jobs:
 
   macos:
     needs: build-version
-    runs-on: macos-15
+    runs-on: macos-latest
     timeout-minutes: 50
     strategy:
       fail-fast: false
@@ -125,7 +129,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24
+          node-version-file: .nvmrc
           package-manager-cache: false
       - uses: ./.github/actions/prepare
         with:
@@ -224,7 +228,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24
+          node-version-file: .nvmrc
           package-manager-cache: false
       - run: npm ci --ignore-scripts
         working-directory: app
@@ -263,7 +267,7 @@ jobs:
   publish:
     if: github.event_name == 'push'
     needs: [build-version, sign]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: write

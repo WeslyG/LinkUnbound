@@ -1,0 +1,60 @@
+name: npm dependency inventory
+
+on:
+  schedule:
+    - cron: "23 5 1 * *"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/dependency-inventory.yml"
+      - ".nvmrc"
+      - "package.json"
+      - "package-lock.json"
+      - "app/package.json"
+      - "app/package-lock.json"
+
+permissions:
+  contents: read
+
+jobs:
+  outdated:
+    name: npm inventory / ${{ matrix.directory }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        directory: [".", app]
+    defaults:
+      run:
+        working-directory: ${{ matrix.directory }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      # Dependabot's routine npm updates target direct dependencies. Include the installed transitive tree here.
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Compare installed, compatible and latest versions
+        shell: bash
+        run: |
+          report="$RUNNER_TEMP/npm-outdated.txt"
+          status=0
+          npm outdated --all --long --color=false > "$report" || status=$?
+          # npm returns 1 when there are outdated packages, and emits a table in that case.
+          if [ "$status" -gt 1 ] || { [ "$status" -eq 1 ] && [ ! -s "$report" ]; }; then
+            exit "$status"
+          fi
+          {
+            printf '### Outdated npm packages\n\n'
+            if [ -s "$report" ]; then
+              printf '%s\n' '```'
+              cat "$report"
+              printf '%s\n' '```'
+            else
+              printf 'All installed packages are up to date.\n'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

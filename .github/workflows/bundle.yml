@@ -10,7 +10,12 @@ on:
       - "app/src-tauri/Cargo.toml"
       - "app/src-tauri/build.rs"
       - "scripts/sidecar.sh"
+      - ".github/actions/**"
+      - ".nvmrc"
+      - "app/package.json"
+      - "app/package-lock.json"
       - "Cargo.toml"
+      - "Cargo.lock"
       - ".github/workflows/bundle.yml"
   pull_request:
   workflow_dispatch:
@@ -29,7 +34,7 @@ jobs:
   # `paths` on the trigger leaves a required check unreported for good; a skipped job counts as met.
   changes:
     name: what the branch touched
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
       packaging: ${{ steps.look.outputs.packaging }}
@@ -61,7 +66,7 @@ jobs:
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24
+          node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: app/package-lock.json
 
@@ -129,7 +134,7 @@ jobs:
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24
+          node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: app/package-lock.json
 

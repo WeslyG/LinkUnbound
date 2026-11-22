@@ -21,7 +21,7 @@ jobs:
   stop:
     name: a closed pull request stops what still runs for it
     if: github.event_name == 'pull_request_target'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       actions: write
@@ -43,7 +43,7 @@ jobs:
   sweep:
     name: a closed pull request takes its caches with it
     if: github.event_name == 'pull_request_target'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       actions: write
@@ -64,7 +64,7 @@ jobs:
       && github.event.workflow_run.head_branch == 'main'
       && github.event.workflow_run.head_repository.full_name == github.repository
       && github.event.workflow_run.conclusion != 'cancelled')
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       actions: write
@@ -76,6 +76,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version-file: .python-version
       - name: What no build will ask for again
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
