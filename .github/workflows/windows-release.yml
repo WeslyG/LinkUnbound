@@ -131,6 +131,24 @@ jobs:
             echo "::error::Apple Developer ID and notarization credentials must be configured together"
             exit 1
           fi
+          settings="target/$TARGET/release/linkunbound-settings"
+          if [ "$APPLE_SIGNING_IDENTITY" = '-' ]; then
+            codesign --force --sign - "../$settings"
+          else
+            signing_dir=$(mktemp -d)
+            keychain="$signing_dir/build.keychain-db"
+            keychain_password=$(openssl rand -hex 24)
+            trap 'security delete-keychain "$keychain" || true; rm -f "$signing_dir/certificate.p12"; rmdir "$signing_dir"' EXIT
+            printf '%s' "$APPLE_CERTIFICATE" | base64 --decode > "$signing_dir/certificate.p12"
+            security create-keychain -p "$keychain_password" "$keychain"
+            security unlock-keychain -p "$keychain_password" "$keychain"
+            security import "$signing_dir/certificate.p12" -k "$keychain" -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+            security list-keychains -d user -s "$keychain" login.keychain-db
+            security set-key-partition-list -S apple-tool:,apple: -s -k "$keychain_password" "$keychain"
+            unset APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD
+            codesign --force --options runtime --timestamp --sign "$APPLE_SIGNING_IDENTITY" "../$settings"
+          fi
+          codesign --verify --strict "../$settings"
           npm run tauri -- bundle --target "$TARGET" --bundles app,dmg
       - name: Verify and stage macOS artifacts
         run: |
