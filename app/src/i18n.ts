@@ -1,7 +1,8 @@
 import { createContext, useContext } from "react";
+import { MAC_RU, RU } from "./i18n.ru";
 import { platform } from "./platform";
 
-export type Language = "es" | "en";
+export type Language = "es" | "en" | "ru";
 
 const ES = {
   navLinks: "Enlaces",
@@ -94,6 +95,80 @@ const ES = {
   welcomeTryDoneNote: "También puedes abrir LinkBear cuando quieras con {}.",
 
   kindAny: "Cualquiera",
+  updateManualFork: "Abre las versiones del fork para instalar la actualización manualmente.",
+  updateForkReleases: "Abrir versiones del fork",
+  updateForkSource: "Actualizaciones desde el fork de WeslyG en GitHub",
+  updateFeedUnavailable:
+    "El feed de actualizaciones del fork no está disponible. Puedes consultar sus versiones en GitHub.",
+  kindDomainList: "Lista de dominios",
+  domainListDeleteWithRules: "Se eliminarán el origen, su copia local y estas reglas vinculadas.",
+  domainListDeleteAll: "Eliminar lista y reglas",
+  ruleListLinksChanged: "Las reglas vinculadas cambiaron. Abre de nuevo la confirmación.",
+  domainListEditing: "Editar lista propia",
+  domainListEdit: "Editar",
+  domainListDeleteTitle: "¿Eliminar la lista «{}»?",
+  domainListDeleteAction: "Eliminar la lista «{}»",
+  domainListDeleteBody: "Se eliminarán la fuente y su copia local.",
+  kindNotDomainList: "No está en la lista",
+  domainListNegatedNote: "Se aplica solo fuera de la lista y si hay una copia local válida.",
+  domainListCustom: "Listas propias",
+  domainListAdd: "Añadir lista",
+  domainListName: "Nombre de la lista",
+  domainListSourceType: "Tipo de fuente",
+  domainListText: "Texto local",
+  domainListUrl: "URL HTTPS directa",
+  domainListValidating: "Validando…",
+  domainListFormat:
+    "TXT UTF-8, un dominio por línea. Una entrada como example.org incluye sus subdominios. .example.org solo incluye los subdominios. # inicia un comentario. Máximo 2 MiB.",
+  ruleListInvalidName: "Introduce un nombre de hasta 80 caracteres.",
+  ruleListInvalidUrl: "Usa una URL HTTPS directa, sin credenciales ni fragmento.",
+  ruleListEmptyOrLarge: "La lista debe contener al menos un dominio y ocupar hasta 2 MiB.",
+  ruleListInvalidLine:
+    "Dominio inválido en la línea {}. No se admiten URL, IP, puertos ni comodines.",
+  ruleListUnknown: "La lista ya no está disponible.",
+  domainListRussiaInsideDetail:
+    "Sitios bloqueados en Rusia y servicios que restringen el acceso desde direcciones IP rusas.",
+  domainListRussiaOutsideDetail:
+    "Servicios rusos que requieren una dirección IP rusa para acceder desde el extranjero.",
+  domainListUkraineDetail:
+    "Dominios bloqueados en Ucrania según las fuentes del proyecto allow-domains.",
+  domainListsIndependent:
+    "Conecta solo las listas que necesites. Cada una tiene su propia regla y navegador, para sus dominios y subdominios.",
+  domainListConnect: "Conectar",
+  domainListViewHosts: "Copia local",
+  domainListViewSource: "Ver fuente",
+  domainListSearch: "Buscar dominio",
+  domainListHostCount: "{} de {} entradas",
+  domainListsSettings: "Listas de dominios",
+  domainListsOrigin: "Origen de las listas",
+  domainListsOriginNote:
+    "Este proyecto publica en GitHub listas de dominios con restricciones de acceso por país. LinkUnbound descarga los archivos y los consulta localmente al abrir enlaces.",
+  domainListsEnabled: "Aplicar reglas de listas",
+  domainListsEnabledNote: "Al desactivar, se conservan las reglas y las copias locales.",
+  domainListsAutoRefresh: "Permitir actualizaciones automáticas",
+  domainListsAutoRefreshNote:
+    "Descarga las listas conectadas desde sus fuentes. Las listas por URL también se pueden actualizar manualmente.",
+  domainListsInterval: "Actualizar una copia con más de",
+  domainListsIntervalNote:
+    "Se comprueba al inicio y cada seis horas mientras LinkUnbound está abierto.",
+  domainListsHours: "{} h",
+  domainListNoRule: "Sin regla",
+  domainListRulePaused: "Aplicación suspendida",
+  domainListDue: "Pendiente de actualizar",
+  domainListFresh: "Al día",
+  domainListRefreshNamed: "Actualizar {}",
+  domainListsStatusFailed: "No se pudo leer el estado de las listas.",
+  domainListRussiaInside: "Rusia — desde dentro",
+  domainListRussiaOutside: "Rusia — desde fuera",
+  domainListUkraine: "Ucrania",
+  domainListSource: "Lista de dominios",
+  domainListNote:
+    "Gestiona las listas y sus actualizaciones en Aplicación → Listas de dominios. Si no hay copia local, LinkUnbound descarga la lista al guardar la regla.",
+  domainListUpdated: "Actualizada: {}",
+  domainListMissing: "Sin copia local",
+  domainListRefresh: "Actualizar",
+  domainListRefreshing: "Actualizando…",
+  ruleListDownloadFailed: "No se pudo actualizar la lista. Si había una copia local, se conserva.",
   kindUrl: "Esta URL",
   kindHost: "Subdominio",
   kindSite: "Sitio",
@@ -108,6 +183,7 @@ const ES = {
   ruleNewKindHost: "Este dominio",
   ruleNewKindSite: "Todo el sitio",
   ruleNewKindApp: "Los enlaces de una aplicación",
+  ruleNewKindAny: "Los demás enlaces",
   ruleNewValueUrl: "https://docs.google.com/document/…",
   ruleNewValueHost: "docs.google.com",
   ruleNewValueSite: "google.com",
@@ -117,7 +193,7 @@ const ES = {
   rulesOne: "1 regla",
   rulesMany: "{} reglas",
   rulesFooter:
-    "Gana siempre la regla más precisa: una URL concreta antes que un subdominio, y este antes que el sitio entero. Las marcadas «Desde» ganan sobre todas y responden a los enlaces de una aplicación, sea cual sea la dirección.",
+    "Primero se comprueban las reglas de aplicación, URL, subdominio y sitio. Después se comprueban las listas, primero las inclusiones y luego las exclusiones. La regla general se aplica al final.",
   rulePrivate: "privada",
   ruleRemove: "Eliminar la regla de {}",
   ruleBrowser: "Navegador para la regla de {}",
@@ -175,6 +251,8 @@ const ES = {
   appTheme: "Tema",
   appLanguage: "Idioma",
   appPicker: "Selector",
+  pickerRuleNote:
+    "La regla «Los demás enlaces» abre los enlaces directamente en el navegador elegido. Elimina esa regla en «Reglas» para volver a configurar el selector.",
   pickerLook: "Estilo",
   pickerClassic: "Clásico",
   pickerSheet: "Mosaico",
@@ -191,6 +269,7 @@ const ES = {
   localeAuto: "Automático",
   localeSpanish: "Español",
   localeEnglish: "Inglés",
+  localeRussian: "Ruso",
   appStartup: "Inicio",
   startupTitle: "Iniciar con el sistema",
   startupOurs: "El primer enlace de cada sesión se abre al instante",
@@ -209,13 +288,6 @@ const ES = {
   notifyTitle: "Avisar cuando una regla abre sin preguntar",
   notifyNote: "Un aviso breve, con la opción de deshacer",
 
-  troubleSection: "Si algo va mal",
-  reportWhat:
-    "El informe reúne en un archivo la versión de LinkUnbound, tus reglas y qué sistema usas, sin las direcciones que visitas.",
-  reportStays: "No se envía a ninguna parte.",
-  reportPick: "Queda en tu equipo y solo lo adjuntas si quieres.",
-  reportGo: "Guardar informe…",
-  reportSaved: "Guardado en {}",
   rescanTitle: "Volver a buscar navegadores",
   rescanNote: "Útil si instalaste uno y no aparece en el selector",
   rescanCounts: "{} nuevos, {} que ya no están",
@@ -312,8 +384,6 @@ const ES = {
     "Cuando abres un enlace, LinkUnbound te pregunta en qué navegador quieres que se abra. Y si siempre respondes lo mismo, deja de preguntar.",
   aboutPrivacy:
     "Sin cuenta, sin publicidad, sin telemetría, sin servidor. Los enlaces que abres no salen de este equipo.",
-  aboutSupportWhy:
-    "LinkUnbound es gratuito y lo seguirá siendo. Si te ahorra un fastidio al día, una estrella ayuda a que lo encuentren y un café mantiene el trabajo en marcha.",
   aboutStar: "Dar una estrella en GitHub",
   aboutRate: "Valorar en la Store",
   badgeLocal: "Tus datos, tuyos",
@@ -325,11 +395,7 @@ const ES = {
   starGo: "Dar una estrella",
   starNo: "No mostrar más",
   starLater: "Ahora no",
-  aboutGitHubSponsor: "Patrocinar en GitHub",
-  aboutSponsorSection: "Apoyar a LinkUnbound",
   aboutRepo: "Abrir el repositorio",
-  aboutTisty: "Tisty",
-  aboutTistyNote: "Notas, documentos y tareas, en archivos que puedes leer sin él.",
   aboutProject: "Proyecto",
   aboutSource: "Código fuente",
   aboutSourceNote: "GPL-3.0 · las aportaciones son bienvenidas",
@@ -340,19 +406,13 @@ const ES = {
   aboutLicences: "Textos de las licencias",
   licencesRefused: "No se pudieron leer los textos de las licencias",
   aboutIssueNote: "Errores, ideas y navegadores que no detecta",
-  aboutSponsor: "Invítame un café",
-  aboutSponsorNote:
-    "LinkUnbound es gratis y siempre lo será. Si te ahorra tiempo, considera apoyar el desarrollo.",
   aboutLicense: "Licencia GPL-3.0",
   aboutLicenseNote: "Software libre: puedes leerlo, cambiarlo y compartirlo",
-  aboutOtherTools: "Otras herramientas",
   aboutMotto: "Cada enlace, donde tú decides.",
   newsOver: "Novedades",
   newsTitle: "Lo nuevo de LinkUnbound",
   newsAll: "Ver todas las versiones",
   newsOk: "Entendido",
-  aboutCoPanda: "CoPanda",
-  aboutCoPandaNote: "Recupera lo que copiaste hace diez minutos, o ayer.",
   open: "Abrir",
 
   save: "Guardar",
@@ -453,6 +513,78 @@ const EN: Record<Key, string> = {
   welcomeTryDoneNote: "You can also bring up LinkBear any time with {}.",
 
   kindAny: "Anything",
+  updateManualFork: "Open the fork’s releases to install the update manually.",
+  updateForkReleases: "Open fork releases",
+  updateForkSource: "Updates from the WeslyG fork on GitHub",
+  updateFeedUnavailable:
+    "The fork’s update feed is unavailable. You can check its releases on GitHub.",
+  kindDomainList: "Domain list",
+  domainListDeleteWithRules: "The source, cached copy and these linked rules will be deleted.",
+  domainListDeleteAll: "Delete list and rules",
+  ruleListLinksChanged: "The linked rules changed. Open the confirmation again.",
+  domainListEditing: "Edit custom list",
+  domainListEdit: "Edit",
+  domainListDeleteTitle: "Delete the “{}” list?",
+  domainListDeleteAction: "Delete the “{}” list",
+  domainListDeleteBody: "The source and its cached copy will be removed.",
+  kindNotDomainList: "Not in domain list",
+  domainListNegatedNote: "Matches only outside the list and only when a valid local copy exists.",
+  domainListCustom: "Custom lists",
+  domainListAdd: "Add list",
+  domainListName: "List name",
+  domainListSourceType: "Source type",
+  domainListText: "Local text",
+  domainListUrl: "Direct HTTPS URL",
+  domainListValidating: "Validating…",
+  domainListFormat:
+    "UTF-8 text, one domain per line. example.org includes its subdomains. .example.org matches subdomains only. # starts a comment. Maximum 2 MiB.",
+  ruleListInvalidName: "Enter a name of up to 80 characters.",
+  ruleListInvalidUrl: "Use a direct HTTPS URL without credentials or a fragment.",
+  ruleListEmptyOrLarge: "A list must contain a domain and fit within 2 MiB.",
+  ruleListInvalidLine: "Invalid domain on line {}. URLs, IPs, ports and wildcards are unsupported.",
+  ruleListUnknown: "The list is no longer available.",
+  domainListRussiaInsideDetail:
+    "Sites blocked in Russia and services that restrict access from Russian IP addresses.",
+  domainListRussiaOutsideDetail:
+    "Russian services that require a Russian IP address when accessed from abroad.",
+  domainListUkraineDetail:
+    "Domains blocked in Ukraine according to the sources used by allow-domains.",
+  domainListsIndependent:
+    "Connect only the lists you need. Each gets its own rule and browser for the listed domains and their subdomains.",
+  domainListConnect: "Connect",
+  domainListViewHosts: "Cached domains",
+  domainListViewSource: "View source",
+  domainListSearch: "Find a domain",
+  domainListHostCount: "{} of {} entries",
+  domainListsSettings: "Domain lists",
+  domainListsOrigin: "Where the lists come from",
+  domainListsOriginNote:
+    "This project publishes lists of domains with country-specific access restrictions on GitHub. LinkUnbound downloads the files and checks them locally when opening links.",
+  domainListsEnabled: "Apply domain-list rules",
+  domainListsEnabledNote: "Turning this off keeps your rules and cached copies.",
+  domainListsAutoRefresh: "Allow automatic updates",
+  domainListsAutoRefreshNote:
+    "Downloads updates to connected lists from their sources. URL-based lists can also be refreshed manually.",
+  domainListsInterval: "Refresh a cache older than",
+  domainListsIntervalNote: "LinkUnbound checks at startup and every six hours while it runs.",
+  domainListsHours: "{} h",
+  domainListNoRule: "No rule connected",
+  domainListRulePaused: "Rules are paused",
+  domainListDue: "Refresh due",
+  domainListFresh: "Up to date",
+  domainListRefreshNamed: "Refresh {}",
+  domainListsStatusFailed: "Could not read domain-list status.",
+  domainListRussiaInside: "Russia — from inside",
+  domainListRussiaOutside: "Russia — from outside",
+  domainListUkraine: "Ukraine",
+  domainListSource: "Domain list",
+  domainListNote:
+    "Manage lists and updates in Application → Domain lists. LinkUnbound downloads the list when you save the rule if there is no local copy.",
+  domainListUpdated: "Updated: {}",
+  domainListMissing: "No cached copy",
+  domainListRefresh: "Refresh",
+  domainListRefreshing: "Refreshing…",
+  ruleListDownloadFailed: "Could not refresh the list. Any existing cached copy is kept.",
   kindUrl: "This URL",
   kindHost: "Subdomain",
   kindSite: "Site",
@@ -467,6 +599,7 @@ const EN: Record<Key, string> = {
   ruleNewKindHost: "This domain",
   ruleNewKindSite: "The whole site",
   ruleNewKindApp: "Links from an application",
+  ruleNewKindAny: "Unmatched links",
   ruleNewValueUrl: "https://docs.google.com/document/…",
   ruleNewValueHost: "docs.google.com",
   ruleNewValueSite: "google.com",
@@ -476,7 +609,7 @@ const EN: Record<Key, string> = {
   rulesOne: "1 rule",
   rulesMany: "{} rules",
   rulesFooter:
-    "The most precise rule always wins: one URL before a subdomain, and that before the whole site. The ones marked «From» win over all of them, and answer the links of one application whatever the address.",
+    "Application, exact URL, subdomain and site rules come first. Domain lists come next, with inclusions before exclusions. The fallback rule comes last.",
   rulePrivate: "private",
   ruleRemove: "Delete the rule for {}",
   ruleBrowser: "Browser for the rule for {}",
@@ -534,6 +667,8 @@ const EN: Record<Key, string> = {
   appTheme: "Theme",
   appLanguage: "Language",
   appPicker: "Picker",
+  pickerRuleNote:
+    "The “Unmatched links” rule opens links directly in the selected browser. Remove that rule under Rules to configure the picker again.",
   pickerLook: "Look",
   pickerClassic: "Classic",
   pickerSheet: "Tiles",
@@ -550,6 +685,7 @@ const EN: Record<Key, string> = {
   localeAuto: "Automatic",
   localeSpanish: "Spanish",
   localeEnglish: "English",
+  localeRussian: "Russian",
   appStartup: "Startup",
   startupTitle: "Launch at system startup",
   startupOurs: "The first link of each session opens instantly",
@@ -568,13 +704,6 @@ const EN: Record<Key, string> = {
   notifyTitle: "Warn when a rule opens without asking",
   notifyNote: "A brief notice, with the option to undo",
 
-  troubleSection: "If something goes wrong",
-  reportWhat:
-    "The report gathers into one file LinkUnbound's version, your rules and which system you are on, without the addresses you visit.",
-  reportStays: "It is never sent anywhere.",
-  reportPick: "It stays on your machine, and you attach it only if you want to.",
-  reportGo: "Save report…",
-  reportSaved: "Saved to {}",
   rescanTitle: "Look for browsers again",
   rescanNote: "Useful if you installed one and it does not show up in the picker",
   rescanCounts: "{} new, {} no longer there",
@@ -670,8 +799,6 @@ const EN: Record<Key, string> = {
     "When you open a link, LinkUnbound asks which browser you want it in. And once you keep giving the same answer, it stops asking.",
   aboutPrivacy:
     "No account, no ads, no telemetry, no server. The links you open never leave this machine.",
-  aboutSupportWhy:
-    "LinkUnbound is free and will stay free. If it saves you an annoyance a day, a star helps it get found — and a coffee keeps the work going.",
   aboutStar: "Star on GitHub",
   aboutRate: "Rate it in the Store",
   badgeLocal: "Your data, yours",
@@ -683,11 +810,7 @@ const EN: Record<Key, string> = {
   starGo: "Give it a star",
   starNo: "Don't show again",
   starLater: "Not now",
-  aboutGitHubSponsor: "Sponsor on GitHub",
-  aboutSponsorSection: "Support LinkUnbound",
   aboutRepo: "Open the repository",
-  aboutTisty: "Tisty",
-  aboutTistyNote: "Notes, documents and tasks, in files you can read without it.",
   aboutProject: "Project",
   aboutSource: "Source code",
   aboutSourceNote: "GPL-3.0 · contributions are welcome",
@@ -698,19 +821,13 @@ const EN: Record<Key, string> = {
   aboutLicences: "Licence texts",
   licencesRefused: "The licence texts could not be read",
   aboutIssueNote: "Bugs, ideas and browsers it fails to detect",
-  aboutSponsor: "Buy me a coffee",
-  aboutSponsorNote:
-    "LinkUnbound is free and always will be. If it saves you time, consider supporting the work.",
   aboutLicense: "GPL-3.0 licence",
   aboutLicenseNote: "Free software: you can read it, change it and share it",
-  aboutOtherTools: "Other tools",
   aboutMotto: "Every link, where you decide.",
   newsOver: "What's new",
   newsTitle: "What's new in LinkUnbound",
   newsAll: "See every release",
   newsOk: "Got it",
-  aboutCoPanda: "CoPanda",
-  aboutCoPandaNote: "Brings back what you copied ten minutes ago, or yesterday.",
   open: "Open",
 
   save: "Save",
@@ -718,7 +835,7 @@ const EN: Record<Key, string> = {
   remove: "Remove",
 };
 
-export const SPEECH: Record<Language, Record<Key, string>> = { es: ES, en: EN };
+export const SPEECH: Record<Language, Record<Key, string>> = { es: ES, en: EN, ru: RU };
 
 const MAC_ES: Partial<Record<Key, string>> = {
   helpSeparateCode: '--user-data-dir="/Users/Shared/Navegadores/Trabajo"',
@@ -783,7 +900,11 @@ const MAC_EN: Partial<Record<Key, string>> = {
   welcomeLinkHint: "No prompt? Pick it in System Settings › Desktop & Dock › Default web browser.",
 };
 
-export const MAC: Record<Language, Partial<Record<Key, string>>> = { es: MAC_ES, en: MAC_EN };
+export const MAC: Record<Language, Partial<Record<Key, string>>> = {
+  es: MAC_ES,
+  en: MAC_EN,
+  ru: MAC_RU,
+};
 
 export function said(language: Language, key: Key): string {
   if (platform() === "macos") {
@@ -812,5 +933,5 @@ export function useSpoken(): Language {
 }
 
 export function spoken(language: string | undefined): Language {
-  return language === "en" ? "en" : "es";
+  return language === "es" || language === "ru" ? language : "en";
 }

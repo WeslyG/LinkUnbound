@@ -1,4 +1,5 @@
 mod about;
+mod domain_lists;
 mod editing;
 mod news;
 mod shell;
@@ -85,6 +86,8 @@ struct RuleView {
     private: bool,
     source_app: Option<String>,
     resolved: bool,
+    list_updated_at: Option<u64>,
+    list_name: Option<String>,
 }
 
 fn is_scheme(said: &str) -> bool {
@@ -143,6 +146,8 @@ fn describe(rule: &Rule, browsers: &[Browser]) -> RuleView {
         Scope::Url(u) => ("url", u.clone()),
         Scope::Host(h) => ("host", h.clone()),
         Scope::Site(d) => ("site", d.clone()),
+        Scope::DomainList(list) => ("domain_list", list.clone()),
+        Scope::NotDomainList(list) => ("not_domain_list", list.clone()),
     };
     // A profile that is gone is a rule that never fires, however present its browser.
     let resolved = found.is_some() && (rule.target.profile_id.is_none() || profile.is_some());
@@ -158,6 +163,16 @@ fn describe(rule: &Rule, browsers: &[Browser]) -> RuleView {
         private: rule.private,
         source_app: rule.source_app.as_deref().map(shown_origin),
         resolved,
+        list_updated_at: rule
+            .scope
+            .list_id()
+            .and_then(|id| domain_lists::updated_at(store().dir(), id)),
+        list_name: rule.scope.list_id().and_then(|id| {
+            linkunbound_core::domain_lists::sources(store().dir())
+                .into_iter()
+                .find(|list| list.id == id)?
+                .name
+        }),
     }
 }
 
@@ -205,7 +220,7 @@ fn rule_from(
         return Err("rulePrivateImpossible");
     }
     let said = value.trim();
-    if said.is_empty() {
+    if kind != "any" && said.is_empty() {
         return Err("ruleValueEmpty");
     }
     // Read the way an arriving link's host is read, so `user@`, a port or a trailing dot come out
@@ -238,6 +253,9 @@ fn rule_from(
         Ok(site)
     };
     let (scope, source_app) = match kind {
+        "any" => (Scope::Any, None),
+        "domain_list" => (Scope::DomainList(said.to_owned()), None),
+        "not_domain_list" => (Scope::NotDomainList(said.to_owned()), None),
         "url" => {
             let url = normalise(said).ok_or("ruleValueNotUrl")?;
             (Scope::Url(url), None)
@@ -259,8 +277,8 @@ fn rule_from(
 
 // Async so it runs off the main thread: on a Mac an app typed by name may be looked for among
 // every installed one.
-#[tauri::command(async)]
-fn rules_add(
+#[tauri::command]
+async fn rules_add(
     kind: String,
     value: String,
     browser_id: String,
@@ -272,11 +290,27 @@ fn rules_add(
         profile_id,
     };
     let rule = rule_from(&kind, &value, target, private, &catalogue()).map_err(str::to_owned)?;
+    let store = store();
+    if let Some(list) = rule.scope.list_id() {
+        if !linkunbound_core::domain_lists::sources(store.dir())
+            .iter()
+            .any(|source| source.id == list)
+        {
+            return Err("ruleListUnknown".to_owned());
+        }
+        if linkunbound_core::domain_lists::read(store.dir(), list).is_none() {
+            domain_lists::refresh_now(list.to_owned()).await?;
+            if linkunbound_core::domain_lists::read(store.dir(), list).is_none() {
+                return Err("ruleListEmptyOrLarge".to_owned());
+            }
+        }
+    }
     // The picker replaces on purpose — «always here» again is a change of mind — but a form
     // that overwrote a rule the person forgot they had would do it without a word.
     let mut standing = false;
-    store()
-        .edit_rules(|rules| {
+    let list_id = rule.scope.list_id().map(str::to_owned);
+    let write = || {
+        store.edit_rules(|rules| {
             if rules.standing_in_for(&rule).is_some() || named_alike(&rules.rules, &rule) {
                 standing = true;
                 return false;
@@ -284,10 +318,31 @@ fn rules_add(
             rules.upsert(rule);
             true
         })
-        .map_err(|e| e.to_string())?;
+    };
+    if let Some(id) = list_id {
+        linkunbound_core::domain_lists::with_source(store.dir(), &id, write)
+            .map_err(|err| err.to_string())?
+            .ok_or("ruleListUnknown")?;
+    } else {
+        write().map_err(|err| err.to_string())?;
+    }
     if standing {
         return Err("ruleExists".to_owned());
     }
+    rules_list()
+}
+
+#[tauri::command]
+async fn rules_refresh_list(id: String) -> Result<Vec<RuleView>, String> {
+    let store = store();
+    let rules = store.rules().map_err(|err| err.to_string())?;
+    let list = rules
+        .rules
+        .iter()
+        .find(|rule| rule.id == id)
+        .and_then(|rule| rule.scope.list_id())
+        .ok_or("ruleGone")?;
+    domain_lists::refresh_now(list.to_owned()).await?;
     rules_list()
 }
 
@@ -518,14 +573,22 @@ fn spoken(prefs: &Preferences) -> &'static str {
     match Language::chosen(prefs.locale) {
         Language::Spanish => "es",
         Language::English => "en",
+        Language::Russian => "ru",
     }
 }
 
 #[tauri::command]
 fn prefs_set(app: AppHandle, prefs: Preferences) -> Result<Settings, String> {
     let mut settled = prefs;
+    settled.domain_lists_refresh_hours = settled.domain_lists_refresh_hours.clamp(6, 168);
+    let mut refresh_lists = false;
     store()
         .edit_prefs(|kept| {
+            refresh_lists = settled.domain_lists_enabled
+                && settled.domain_lists_auto_refresh
+                && (!kept.domain_lists_enabled
+                    || !kept.domain_lists_auto_refresh
+                    || kept.domain_lists_refresh_hours != settled.domain_lists_refresh_hours);
             settled.here_since = kept.here_since;
             settled.asked_for_a_star = kept.asked_for_a_star;
             settled.news_seen.clone_from(&kept.news_seen);
@@ -534,6 +597,9 @@ fn prefs_set(app: AppHandle, prefs: Preferences) -> Result<Settings, String> {
             true
         })
         .map_err(|e| e.to_string())?;
+    if refresh_lists {
+        tauri::async_runtime::spawn_blocking(|| domain_lists::refresh_due(&store()));
+    }
     shell::repaint(&app, settled.theme);
     Ok(claim(&settled))
 }
@@ -615,6 +681,9 @@ async fn update_ready(
     // A look that never answered says nothing about whether an update is owed, so what was found
     // before stays where it is.
     let Some(manifest) = manifest else {
+        if asked {
+            return Err("updateFeedUnavailable".to_owned());
+        }
         return Ok(update::remembered(
             HERE,
             looked.found_version.as_deref(),
@@ -701,6 +770,7 @@ async fn install_from(
     if !update::self_installs(kept.route) || update::from_a_mount() {
         return Err("updateNotHere".to_owned());
     }
+    let key = update::fork_public_key().ok_or("updateManualFork")?;
 
     let looked = update::looked(dir);
     let Some(want) = update::remembered(
@@ -738,7 +808,7 @@ async fn install_from(
     started.store(true, std::sync::atomic::Ordering::Release);
 
     let asked = want.clone();
-    let mut building = app.updater_builder();
+    let mut building = app.updater_builder().pubkey(key);
     if let Some(platform) = update::platform(translated()) {
         building = building.target(platform);
     }
@@ -963,12 +1033,14 @@ enum Errand {
     Look,
     /// Take the update already written down.
     Update,
+    RefreshDomainLists,
 }
 
 fn errand_in(args: &[String]) -> Option<Errand> {
     args.iter().find_map(|one| match one.as_str() {
         "--look" => Some(Errand::Look),
         "--update" => Some(Errand::Update),
+        "--refresh-domain-lists" => Some(Errand::RefreshDomainLists),
         _ => None,
     })
 }
@@ -988,6 +1060,11 @@ fn run_errand(app: AppHandle, errand: Errand) {
             }
             Errand::Update => {
                 let _ = install(app.clone(), false).await;
+            }
+            Errand::RefreshDomainLists => {
+                let _ =
+                    tauri::async_runtime::spawn_blocking(|| domain_lists::refresh_due(&store()))
+                        .await;
             }
         }
         app.exit(0);
@@ -1022,6 +1099,11 @@ pub fn run() {
             rules_add,
             rules_remove,
             rules_retarget,
+            rules_refresh_list,
+            domain_lists::domain_lists_status,
+            domain_lists::domain_list_hosts,
+            domain_lists::domain_list_add,
+            domain_lists::domain_list_remove,
             browsers_list,
             browsers_set_hidden,
             browsers_remove,
@@ -1031,7 +1113,6 @@ pub fn run() {
             browsers_reorder,
             maintenance_rescan,
             maintenance_reset,
-            about::maintenance_report,
             prefs_get,
             prefs_set,
             shell::picker_preview,
@@ -1219,6 +1300,28 @@ mod tests {
             Scope::Url("https://docs.google.com/a?b=1".to_owned())
         );
         assert!(url.source_app.is_none());
+
+        let fallback = rule_from("any", "", aimed("chrome", Some("Default")), false, &all)
+            .expect("an unmatched-link rule needs no address");
+        assert_eq!(fallback.scope, Scope::Any);
+        assert!(fallback.source_app.is_none());
+        let mut rules = linkunbound_core::RuleSet::default();
+        rules.upsert(fallback);
+        rules.upsert(url);
+        assert_eq!(
+            rules
+                .resolve_from("https://docs.google.com/a?b=1", "docs.google.com", None)
+                .expect("exact URL rule takes priority")
+                .target,
+            aimed("firefox", None)
+        );
+        assert_eq!(
+            rules
+                .resolve_from("https://example.org/", "example.org", None)
+                .expect("fallback handles an unmatched URL")
+                .target,
+            aimed("chrome", Some("Default"))
+        );
 
         let host = rule_from(
             "host",

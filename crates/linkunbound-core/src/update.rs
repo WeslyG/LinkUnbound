@@ -52,16 +52,19 @@ pub struct Progress {
 }
 
 fn beside(dir: &Path) -> PathBuf {
-    dir.join("update.json")
+    dir.join("fork-update.json")
 }
 
 fn under_way(dir: &Path) -> PathBuf {
-    dir.join("updating.json")
+    dir.join("fork-updating.json")
 }
 
 #[must_use]
 pub fn looked(dir: &Path) -> Looked {
-    read(&beside(dir)).unwrap_or_default()
+    read(&beside(dir)).unwrap_or_else(|| Looked {
+        candidates: read::<Looked>(&dir.join("update.json")).and_then(|old| old.candidates),
+        ..Looked::default()
+    })
 }
 
 /// Written the way the rest of the store is: through a sibling file and a rename, so a crash
@@ -260,18 +263,19 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
     }
 
-    /// A file written before the route was recorded still reads; the route is simply unknown.
     #[test]
-    fn a_look_written_before_the_route_existed_still_reads() {
+    fn the_fork_keeps_the_update_track_but_ignores_upstream_offers() {
         let dir = scratch("old");
         let _ = std::fs::create_dir_all(&dir);
         std::fs::write(
             dir.join("update.json"),
-            r#"{"checked_at": 1, "found_version": "2.0.1", "candidates": null}"#,
+            r#"{"checked_at": 1, "found_version": "2.0.1", "candidates": true}"#,
         )
         .unwrap();
         let read = looked(&dir);
-        assert_eq!(read.found_version.as_deref(), Some("2.0.1"));
+        assert!(read.checked_at.is_none());
+        assert!(read.found_version.is_none());
+        assert_eq!(read.candidates, Some(true));
         assert!(read.found_route.is_none());
         let _ = std::fs::remove_dir_all(&dir);
     }

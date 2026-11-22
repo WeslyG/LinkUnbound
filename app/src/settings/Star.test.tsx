@@ -32,7 +32,7 @@ describe("the card that asks for a star", () => {
   it("opens the repository and is never asked for again", async () => {
     await userEvent.click(said("Dar una estrella"));
 
-    expect(opened).toEqual(["https://github.com/rgdevment/LinkUnbound"]);
+    expect(opened).toEqual(["https://github.com/WeslyG/LinkUnbound"]);
     expect(invoke).toHaveBeenCalledWith("star_done");
     expect(settled).toHaveBeenCalled();
   });

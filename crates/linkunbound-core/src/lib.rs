@@ -3,6 +3,7 @@ mod binaries;
 mod browser;
 mod config;
 mod detect;
+pub mod domain_lists;
 mod hostile;
 mod i18n;
 mod icons;
@@ -11,7 +12,6 @@ mod launch;
 mod news;
 mod prefs;
 mod private;
-mod report;
 mod rule;
 mod star;
 mod store;
@@ -34,12 +34,11 @@ pub use detect::{chromium_home_on_mac, chromium_home_on_windows, id_for, profile
 pub use hostile::{as_file_name, disarm, is_remote};
 pub use i18n::{Language, Strings};
 pub use icons::{cached_icon, prune as prune_icons};
-pub use journal::{JOURNAL, journal, note, scrubbed};
+pub use journal::{JOURNAL, note, scrubbed};
 pub use launch::{LaunchError, open as launch, spawn_and_forget};
 pub use news::{behind as news_behind, untold as untold_news};
 pub use prefs::{Locale, PickerPosition, PickerStyle, Preferences, Theme};
 pub use private::private_flag_for;
-pub use report::{diagnostics, redact};
 pub use rule::{
     Origin, Rule, RuleSet, Scope, Target, is_public_suffix, same_name, site_of, visible,
 };

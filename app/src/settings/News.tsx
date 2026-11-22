@@ -5,7 +5,7 @@ import bear from "../assets/linkunbound.svg";
 import { useSpoken, useWords } from "../i18n";
 import { headline, toldFor } from "./told";
 
-const RELEASES = "https://github.com/rgdevment/LinkUnbound/releases";
+const RELEASES = "https://github.com/WeslyG/LinkUnbound/releases";
 
 export default function News() {
   const t = useWords();

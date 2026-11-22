@@ -281,7 +281,9 @@ describe("rules", () => {
 
   it("says which rule wins instead of implying the order decides", async () => {
     render(<Rules />);
-    expect(await screen.findByText(/regla más precisa/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/primero las inclusiones y luego las exclusiones/),
+    ).toBeInTheDocument();
   });
 
   it("surfaces a broken store instead of showing no rules at all", async () => {

@@ -40,7 +40,8 @@
         "installMode": "currentUser",
         "languages": [
           "English",
-          "Spanish"
+          "Spanish",
+          "Russian"
         ],
         "displayLanguageSelector": false,
         "installerHooks": "nsis/hooks.nsh"
@@ -66,10 +67,11 @@
   "mainBinaryName": "linkunbound-settings",
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDUxREVBNzU0QUJCQTRBOUEKUldTYVNycXJWS2ZlVWJjeGFJdFc0ZkQrZTRsSUhubG9FaDdseTZzcUl6MTB1NS9TanAzcEE4S0oK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDdDNUNEOEQyNDU5QThFREMKUldUY2pwcEYwdGhjZkwxVVJ0NmdmNFcxZ2FITlBFSHk4Z0RpVDFNNjNBZXo5WXZHN1JvTlIzWmEK",
       "endpoints": [
-        "https://raw.githubusercontent.com/rgdevment/LinkUnbound/manifest/latest.json"
+        "https://raw.githubusercontent.com/WeslyG/LinkUnbound/manifest/latest.json"
       ],
+      "requireSignedVersion": true,
       "windows": {
         "installMode": "passive"
       }

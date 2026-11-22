@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useWords } from "../i18n";
 
-const REPO = "https://github.com/rgdevment/LinkUnbound";
+const REPO = "https://github.com/WeslyG/LinkUnbound";
 const RATING = "ms-windows-store://review/?ProductId=9N9F7C8Q43KC";
 
 /// A copy the Store sold is asked for the rating instead of the star: the rating is what decides

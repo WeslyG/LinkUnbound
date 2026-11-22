@@ -16,10 +16,15 @@ const PREFS = {
   picker_style: "classic" as "bear" | "classic" | "sheet" | "compact",
   picker_position: "pointer" as "pointer" | "center",
   looks_for_updates: true,
+  domain_lists_enabled: true,
+  domain_lists_auto_refresh: false,
+  domain_lists_refresh_hours: 24,
 };
 
 function answers(prefs = PREFS, held: string | null = "Alt+Shift+L", fail?: string) {
   invoke.mockImplementation((cmd: string) => {
+    if (cmd === "rules_list") return Promise.resolve([]);
+    if (cmd === "domain_lists_status") return Promise.resolve([]);
     if (cmd === "prefs_set" && fail) return Promise.reject(fail);
     return Promise.resolve({ prefs, shortcut_held: held });
   });
@@ -54,6 +59,47 @@ describe("application settings", () => {
     answers();
   });
 
+  it("lets the user choose an interval before permitting background list downloads", async () => {
+    const otherwise = invoke.getMockImplementation();
+    invoke.mockImplementation((cmd: string, payload?: { prefs: typeof PREFS }) =>
+      cmd === "prefs_set"
+        ? Promise.resolve({ prefs: payload?.prefs, shortcut_held: "Alt+Shift+L" })
+        : otherwise?.(cmd),
+    );
+    mount();
+    const permission = await screen.findByRole("switch", {
+      name: "Permitir actualizaciones automáticas",
+    });
+    expect(permission).not.toBeChecked();
+    await userEvent.selectOptions(
+      screen.getByRole("combobox", { name: "Actualizar una copia con más de" }),
+      "48",
+    );
+    expect(invoke).toHaveBeenCalledWith("prefs_set", {
+      prefs: { ...PREFS, domain_lists_refresh_hours: 48 },
+    });
+    await userEvent.click(permission);
+    expect(invoke).toHaveBeenCalledWith("prefs_set", {
+      prefs: { ...PREFS, domain_lists_auto_refresh: true, domain_lists_refresh_hours: 48 },
+    });
+  });
+
+  it("locks picker controls when unmatched links have a destination", async () => {
+    const otherwise = invoke.getMockImplementation();
+    invoke.mockImplementation((cmd: string) =>
+      cmd === "rules_list"
+        ? Promise.resolve([{ kind: "any", source_app: null, resolved: true }])
+        : otherwise?.(cmd),
+    );
+    mount();
+
+    expect(await screen.findByText(/Elimina esa regla/)).toBeVisible();
+    expect(screen.getByRole("radio", { name: "Clásico" })).toBeDisabled();
+    expect(screen.getByRole("radio", { name: "Junto al puntero" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Vista previa" })).toBeDisabled();
+    expect(screen.getByRole("combobox", { name: "Idioma" })).toBeEnabled();
+  });
+
   /// The other tests assert the payload, not what the control ends up showing.
   it("marks the option that is actually in force", async () => {
     answers({ ...PREFS, theme: "dark", locale: "english" });
@@ -63,9 +109,7 @@ describe("application settings", () => {
     expect(theme.getByRole("radio", { name: "Oscuro" })).toBeChecked();
     expect(theme.getByRole("radio", { name: "Automático" })).not.toBeChecked();
 
-    const language = within(screen.getByRole("group", { name: "Idioma" }));
-    expect(language.getByRole("radio", { name: "Inglés" })).toBeChecked();
-    expect(language.getByRole("radio", { name: "Español" })).not.toBeChecked();
+    expect(screen.getByRole("combobox", { name: "Idioma" })).toHaveValue("english");
   });
 
   it("offers the tiles, and keeps the classic picker marked until they are chosen", async () => {

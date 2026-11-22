@@ -70,13 +70,23 @@ pub enum Scope {
     Url(String),
     Host(String),
     Site(String),
+    DomainList(String),
+    NotDomainList(String),
 }
 
 impl Scope {
+    pub fn list_id(&self) -> Option<&str> {
+        match self {
+            Self::DomainList(id) | Self::NotDomainList(id) => Some(id),
+            _ => None,
+        }
+    }
+
     #[must_use]
     pub fn matches(&self, url: &str, host: &str) -> bool {
         match self {
             Self::Any => true,
+            Self::DomainList(_) | Self::NotDomainList(_) => false,
             Self::Url(u) => crate::url::same_address(url, u),
             Self::Host(h) => host == h.trim_end_matches('.'),
             Self::Site(d) => {
@@ -90,6 +100,8 @@ impl Scope {
     fn specificity(&self) -> u64 {
         match self {
             Self::Any => 0,
+            Self::NotDomainList(_) => 1,
+            Self::DomainList(_) => 2,
             Self::Site(d) => 1_000 + d.len() as u64,
             Self::Host(h) => 100_000 + h.len() as u64,
             Self::Url(u) => 10_000_000 + u.len() as u64,
@@ -157,6 +169,8 @@ impl Rule {
             Scope::Url(u) => format!("url:{u}"),
             Scope::Host(h) => format!("host:{h}"),
             Scope::Site(d) => format!("site:{d}"),
+            Scope::DomainList(list) => format!("domain_list:{list}"),
+            Scope::NotDomainList(list) => format!("not_domain_list:{list}"),
         };
         match &self.source_app {
             Some(app) => format!("{scope}@{}", app.to_ascii_lowercase()),
@@ -173,8 +187,19 @@ impl Rule {
         origin + self.scope.specificity()
     }
 
-    fn applies(&self, url: &str, host: &str, origin: Option<&Origin>) -> bool {
-        if !self.scope.matches(url, host) {
+    fn applies(
+        &self,
+        url: &str,
+        host: &str,
+        origin: Option<&Origin>,
+        lists: &impl Fn(&str) -> Option<bool>,
+    ) -> bool {
+        let matches = match &self.scope {
+            Scope::DomainList(list) => lists(list) == Some(true),
+            Scope::NotDomainList(list) => lists(list) == Some(false),
+            _ => self.scope.matches(url, host),
+        };
+        if !matches {
             return false;
         }
         match (&self.source_app, origin) {
@@ -257,10 +282,21 @@ impl RuleSet {
     /// `max_by_key` alone would take the last.
     #[must_use]
     pub fn resolve_from(&self, url: &str, host: &str, origin: Option<&Origin>) -> Option<&Rule> {
+        self.resolve_with_lists(url, host, origin, |_| None)
+    }
+
+    #[must_use]
+    pub fn resolve_with_lists(
+        &self,
+        url: &str,
+        host: &str,
+        origin: Option<&Origin>,
+        lists: impl Fn(&str) -> Option<bool>,
+    ) -> Option<&Rule> {
         self.rules
             .iter()
             .enumerate()
-            .filter(|(_, r)| r.applies(url, host, origin))
+            .filter(|(_, r)| r.applies(url, host, origin, &lists))
             .max_by_key(|(i, r)| (r.specificity(), Reverse(*i)))
             .map(|(_, r)| r)
     }
@@ -268,6 +304,43 @@ impl RuleSet {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn a_domain_list_takes_priority_over_the_fallback_but_not_a_site_rule() {
+        use super::{RuleSet, Scope};
+        let list = "russia_inside";
+        let url = "https://sub.example.com/";
+        let host = "sub.example.com";
+        let mut rules = RuleSet::default();
+        rules.upsert(rule("", Scope::Any, None, "fallback"));
+        rules.upsert(rule("", Scope::DomainList(list.to_owned()), None, "list"));
+        rules.upsert(rule(
+            "",
+            Scope::NotDomainList(list.to_owned()),
+            None,
+            "excluded",
+        ));
+
+        let destination = |set: &RuleSet, found: Option<bool>| {
+            set.resolve_with_lists(url, host, None, |candidate| {
+                (candidate == list).then_some(found).flatten()
+            })
+            .unwrap()
+            .target
+            .browser_id
+            .clone()
+        };
+        assert_eq!(destination(&rules, Some(true)), "list");
+        assert_eq!(destination(&rules, Some(false)), "excluded");
+        assert_eq!(destination(&rules, None), "fallback");
+        rules.upsert(rule(
+            "",
+            Scope::Site("example.com".to_owned()),
+            None,
+            "site",
+        ));
+        assert_eq!(destination(&rules, Some(true)), "site");
+    }
+
     #[test]
     fn an_app_name_is_the_same_name_in_any_case_and_any_alphabet() {
         assert!(super::same_name("Übersicht", "übersicht"));

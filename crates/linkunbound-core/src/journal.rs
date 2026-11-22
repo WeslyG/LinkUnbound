@@ -1,8 +1,6 @@
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::report::redact;
-
 pub const JOURNAL: &str = "errors.log";
 const KEPT: usize = 200;
 const GONE: &str = "[…]";
@@ -150,6 +148,29 @@ fn civil(days: i64) -> (i64, u32, u32) {
     let month = u32::try_from(if mp < 10 { mp + 3 } else { mp - 9 }).unwrap_or(1);
     let year = yoe + era * 400 + i64::from(month <= 2);
     (year, month, day)
+}
+
+#[must_use]
+fn redact(url: &str, instead: &str) -> String {
+    // Parsed, not split on `/`: a browser reads `\` as a separator too, and a path written with
+    // backslashes rode along whole as part of the host.
+    let Ok(parsed) = url::Url::parse(url) else {
+        return instead.to_owned();
+    };
+    let Some(host) = parsed.host_str() else {
+        return instead.to_owned();
+    };
+    let at = match parsed.port() {
+        Some(port) => format!("{}://{host}:{port}", parsed.scheme()),
+        None => format!("{}://{host}", parsed.scheme()),
+    };
+    let goes_further =
+        parsed.path() != "/" || parsed.query().is_some() || parsed.fragment().is_some();
+    if goes_further {
+        format!("{at}/…")
+    } else {
+        at
+    }
 }
 
 #[cfg(test)]

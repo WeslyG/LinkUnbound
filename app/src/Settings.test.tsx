@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Settings from "./Settings";
@@ -25,12 +25,13 @@ const BASE = {
 const BUILD = {
   version: "2.0.0",
   license: "GPL-3.0-only",
-  repository: "https://github.com/rgdevment/LinkUnbound",
+  repository: "https://github.com/WeslyG/LinkUnbound",
   candidates: false,
   candidatesApply: true,
 };
 
 const PREFS = {
+  language: "es",
   prefs: {
     schema_version: 1,
     theme: "system",
@@ -39,6 +40,9 @@ const PREFS = {
     notify_on_rule: true,
     picker_style: "classic",
     looks_for_updates: true,
+    domain_lists_enabled: true,
+    domain_lists_auto_refresh: false,
+    domain_lists_refresh_hours: 24,
   },
   shortcut_held: "Alt+Shift+L",
 };
@@ -50,6 +54,7 @@ function answers(
   invoke.mockImplementation((cmd: string) => {
     if (cmd in overrides) return overrides[cmd]();
     if (cmd === "rules_list") return Promise.resolve([]);
+    if (cmd === "domain_lists_status") return Promise.resolve([]);
     if (cmd === "prefs_get" || cmd === "prefs_set") return Promise.resolve(PREFS);
     if (cmd === "update_ready") return Promise.resolve(null);
     if (cmd === "system_legacy") return Promise.resolve(null);
@@ -69,6 +74,126 @@ async function opened() {
 }
 
 describe("settings", () => {
+  it("edits the cached text with the same id and confirms deletion", async () => {
+    const list = { id: "custom-1-0", name: "Мои домены", rule_id: "inside", updated_at: 1 };
+    answers(BASE, {
+      domain_lists_status: () => Promise.resolve([list]),
+      domain_list_hosts: () => Promise.resolve(["old.example"]),
+      domain_list_add: () => Promise.resolve([list]),
+      domain_list_remove: () => Promise.resolve([]),
+      rules_list: () =>
+        Promise.resolve([
+          {
+            id: "inside",
+            kind: "domain_list",
+            covers: list.id,
+            browser: "Firefox",
+            profile: "Рабочий",
+          },
+          {
+            id: "outside",
+            kind: "not_domain_list",
+            covers: list.id,
+            browser: "Chrome",
+            profile: null,
+          },
+          { id: "unrelated", kind: "host", covers: list.id, browser: "Edge", profile: null },
+        ]),
+      prefs_get: () => Promise.resolve({ ...PREFS, language: "ru" }),
+    });
+    render(<Settings />);
+    await go("Редактировать");
+    const text = await screen.findByRole("textbox", { name: "Локальный текст" });
+    expect(text).toHaveValue("old.example");
+    await userEvent.clear(text);
+    await userEvent.type(text, "new.example");
+    await go("Сохранить");
+    expect(invoke).toHaveBeenCalledWith("domain_list_add", {
+      id: list.id,
+      name: list.name,
+      url: null,
+      text: "new.example",
+    });
+    await go("Удалить список «Мои домены»");
+    expect(invoke).not.toHaveBeenCalledWith("domain_list_remove", expect.anything());
+    const confirmation = await screen.findByRole("alertdialog");
+    expect(confirmation).toHaveTextContent("Firefox · Рабочий");
+    expect(confirmation).toHaveTextContent("Chrome");
+    expect(confirmation).not.toHaveTextContent("Edge");
+    await userEvent.click(
+      within(confirmation).getByRole("button", { name: "Удалить список и правила" }),
+    );
+    expect(invoke).toHaveBeenCalledWith("domain_list_remove", {
+      id: list.id,
+      ruleIds: ["inside", "outside"],
+    });
+  });
+
+  it("adds a custom text list and saves an inverse rule for it", async () => {
+    const custom = { id: "custom-1-0", name: "Мои домены", rule_id: null, updated_at: 1 };
+    answers(BASE, {
+      domain_lists_status: () => Promise.resolve([custom]),
+      domain_list_add: () => Promise.resolve([custom]),
+      browsers_list: () =>
+        Promise.resolve([
+          { id: "fox", name: "Firefox", profile_names: [], private: true, hidden: false },
+        ]),
+      rules_add: () => Promise.resolve([]),
+      prefs_get: () => Promise.resolve({ ...PREFS, language: "ru" }),
+    });
+    render(<Settings />);
+    await go("Добавить список");
+    await userEvent.type(screen.getByRole("textbox", { name: "Название списка" }), "Мои домены");
+    await userEvent.type(screen.getByRole("textbox", { name: "Локальный текст" }), "example.org");
+    await go("Сохранить");
+    await waitFor(() =>
+      expect(invoke).toHaveBeenCalledWith("domain_list_add", {
+        name: "Мои домены",
+        url: null,
+        text: "example.org",
+      }),
+    );
+    await go("Подключить");
+    await userEvent.selectOptions(
+      await screen.findByRole("combobox", { name: "Для каких ссылок" }),
+      "not_domain_list",
+    );
+    expect(screen.getByRole("combobox", { name: "Список доменов" })).toHaveValue(custom.id);
+    await go("Сохранить");
+    await waitFor(() =>
+      expect(invoke).toHaveBeenCalledWith("rules_add", {
+        kind: "not_domain_list",
+        value: custom.id,
+        browserId: "fox",
+        profileId: null,
+        private: false,
+      }),
+    );
+  });
+
+  it("shows cached domains and opens a form for only the list chosen", async () => {
+    answers(BASE, {
+      domain_lists_status: () =>
+        Promise.resolve([
+          { id: "russia_inside", rule_id: "domain_list:russia_inside", updated_at: 1 },
+          { id: "ukraine", rule_id: null, updated_at: null },
+        ]),
+      domain_list_hosts: () => Promise.resolve(["one.example", "two.example"]),
+      browsers_list: () => Promise.resolve([]),
+      prefs_get: () => Promise.resolve({ ...PREFS, language: "ru" }),
+    });
+    render(<Settings />);
+    await go("Домены в кеше");
+    const search = await screen.findByRole("searchbox", { name: "Найти домен" });
+    await userEvent.type(search, "two");
+    expect(screen.getByText("two.example")).toBeVisible();
+    expect(screen.queryByText("one.example")).toBeNull();
+
+    await go("Подключить");
+    expect(await screen.findByRole("combobox", { name: "Список доменов" })).toHaveValue("ukraine");
+    expect(invoke).not.toHaveBeenCalledWith("rules_add", expect.anything());
+  });
+
   /// The picker sends people here to add a browser, by naming the page after a hash.
   it("opens on the browsers when the picker asks for them", async () => {
     answers(BASE);
@@ -132,6 +257,20 @@ describe("settings", () => {
     expect(screen.getByRole("button", { name: "Maintenance" })).toBeInTheDocument();
   });
 
+  it("waits for language detection and opens in English if it fails", async () => {
+    let fail = () => {};
+    answers(BASE, {
+      prefs_get: () =>
+        new Promise((_, reject) => {
+          fail = () => reject(new Error("unavailable"));
+        }),
+    });
+    render(<Settings />);
+    expect(screen.queryByRole("navigation")).toBeNull();
+    fail();
+    expect(await screen.findByRole("button", { name: "Application" })).toBeVisible();
+  });
+
   it("changes language without a restart when the choice is made", async () => {
     answers(BASE, {
       prefs_get: () => Promise.resolve({ ...PREFS, language: "es" }),
@@ -144,7 +283,10 @@ describe("settings", () => {
     });
     await opened();
     await go("Aplicación");
-    await userEvent.click(await screen.findByRole("radio", { name: "Inglés" }));
+    await userEvent.selectOptions(
+      await screen.findByRole("combobox", { name: "Idioma" }),
+      "english",
+    );
     expect(await screen.findByRole("button", { name: "Application" })).toBeInTheDocument();
   });
 
@@ -561,7 +703,7 @@ describe("settings", () => {
     expect(screen.queryByRole("button", { name: "Reparar" })).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Descargar de nuevo" }));
     expect(invoke).toHaveBeenCalledWith("system_open_elsewhere", {
-      url: "https://github.com/rgdevment/LinkUnbound/releases/latest",
+      url: "https://github.com/WeslyG/LinkUnbound/releases/latest",
     });
     expect(invoke).not.toHaveBeenCalledWith("system_repair", expect.anything());
   });
@@ -612,7 +754,7 @@ describe("settings", () => {
     expect(await screen.findByText(/Todavía no hay ninguna regla/)).toBeInTheDocument();
     expect(screen.queryByText("Navegador predeterminado")).toBeNull();
     await go("Acerca de");
-    expect(await screen.findByText(/Estás en la última versión/)).toBeInTheDocument();
+    expect(await screen.findByText(/Actualizaciones desde el fork de WeslyG/)).toBeInTheDocument();
     expect(screen.queryByText(/Todavía no hay ninguna regla/)).toBeNull();
   });
 

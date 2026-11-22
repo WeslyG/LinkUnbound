@@ -8,13 +8,13 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 /// walk the feed backwards. A branch also leaves the feed's history in git, where a bad write is
 /// one revert away.
 const MANIFEST: &str =
-    "https://raw.githubusercontent.com/rgdevment/LinkUnbound/manifest/release-manifest.json";
+    "https://raw.githubusercontent.com/WeslyG/LinkUnbound/manifest/release-manifest.json";
 /// One holds a stable version and the other a candidate, never both, so the track a copy belongs
 /// to can be read off the version it is being offered.
 pub const LATEST: &str =
-    "https://raw.githubusercontent.com/rgdevment/LinkUnbound/manifest/latest.json";
+    "https://raw.githubusercontent.com/WeslyG/LinkUnbound/manifest/latest.json";
 pub const CANDIDATE: &str =
-    "https://raw.githubusercontent.com/rgdevment/LinkUnbound/manifest/candidate.json";
+    "https://raw.githubusercontent.com/WeslyG/LinkUnbound/manifest/candidate.json";
 
 /// Market and language are fixed, so the request says nothing of the person making it.
 const CATALOG: &str =
@@ -31,6 +31,17 @@ const PATIENCE: Duration = Duration::from_secs(5);
 const APART: u64 = 24 * 60 * 60;
 /// The Store answers a real look once every half hour and repeats its last answer in between.
 const SHOP_APART: u64 = 30 * 60;
+
+pub fn fork_public_key() -> Option<&'static str> {
+    static KEY: std::sync::OnceLock<Option<String>> = std::sync::OnceLock::new();
+    KEY.get_or_init(|| {
+        let config: serde_json::Value =
+            serde_json::from_str(include_str!("../tauri.conf.json")).ok()?;
+        let key = config.pointer("/plugins/updater/pubkey")?.as_str()?.trim();
+        (!key.is_empty()).then(|| key.to_owned())
+    })
+    .as_deref()
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -94,7 +105,7 @@ pub const fn self_installs(route: Route) -> bool {
 /// Where a release of ours can possibly come from. The plugin fetches whatever address the feed
 /// names, so a feed that was tampered with could otherwise send the download anywhere.
 const FROM: &str = "github.com";
-const RELEASES: &str = "/rgdevment/LinkUnbound/releases/download/";
+const RELEASES: &str = "/WeslyG/LinkUnbound/releases/download/";
 
 /// The signature covers the installer's bytes and nothing else: not the manifest, not the version
 /// the manifest claims. So a feed that was tampered with can name a new version and hand over the
@@ -197,7 +208,7 @@ fn offered(version: String, kept: Kept) -> Ready {
         // A copy running from a mounted image cannot replace itself either, and the refusal in
         // `update_install` reads the same thing: offering a button it will take away is worse
         // than not offering one.
-        installs: self_installs(kept.route) && !from_a_mount(),
+        installs: self_installs(kept.route) && !from_a_mount() && fork_public_key().is_some(),
         coming: None,
     }
 }
@@ -768,6 +779,10 @@ mod tests {
     #[test]
     fn an_installer_is_only_ever_taken_from_where_our_releases_live() {
         assert!(ours(
+            "https://github.com/WeslyG/LinkUnbound/releases/download/v2.1.0/linkunbound.exe",
+            "2.1.0"
+        ));
+        assert!(!ours(
             "https://github.com/rgdevment/LinkUnbound/releases/download/v2.1.0/linkunbound.exe",
             "2.1.0"
         ));
@@ -777,7 +792,7 @@ mod tests {
         );
 
         assert!(
-            !ours("http://github.com/rgdevment/LinkUnbound/x.exe", "2.1.0"),
+            !ours("http://github.com/WeslyG/LinkUnbound/x.exe", "2.1.0"),
             "plain http"
         );
         assert!(
@@ -797,7 +812,7 @@ mod tests {
     /// installer of an old one, and the update would verify and roll the copy backwards.
     #[test]
     fn a_feed_cannot_hand_over_the_installer_of_a_different_version() {
-        let old = "https://github.com/rgdevment/LinkUnbound/releases/download/v2.0.0/setup.exe";
+        let old = "https://github.com/WeslyG/LinkUnbound/releases/download/v2.0.0/setup.exe";
 
         assert!(
             !ours(old, "2.1.0"),
@@ -812,7 +827,7 @@ mod tests {
         for at in [
             "https://github.com/attacker/LinkUnbound/releases/download/v2.1.0/x.exe",
             "https://github.com/rgdevment/Other/releases/download/v2.1.0/x.exe",
-            "https://github.com/rgdevment/LinkUnbound/raw/main/x.exe",
+            "https://github.com/WeslyG/LinkUnbound/raw/main/x.exe",
         ] {
             assert!(!ours(at, "2.1.0"), "{at}");
         }
@@ -821,7 +836,7 @@ mod tests {
     #[test]
     fn a_port_of_its_own_is_not_our_release_page() {
         assert!(!ours(
-            "https://github.com:8443/rgdevment/LinkUnbound/releases/download/v2.1.0/x.exe",
+            "https://github.com:8443/WeslyG/LinkUnbound/releases/download/v2.1.0/x.exe",
             "2.1.0"
         ));
     }
@@ -922,10 +937,11 @@ mod tests {
     fn an_offer_says_whether_this_copy_can_take_it() {
         let feed = r#"{"latest":"2.1.0","store":"2.1.0"}"#;
 
-        assert!(
+        assert_eq!(
             newer("2.0.0", feed, Kept::plain(Route::Download), None)
                 .unwrap()
-                .installs
+                .installs,
+            fork_public_key().is_some()
         );
         assert!(
             !newer("2.0.0", feed, Kept::plain(Route::Store), None)

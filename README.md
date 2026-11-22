@@ -9,19 +9,13 @@
 **No accounts. No subscriptions. No telemetry. Everything stays on your computer.**
 
 <p>
-  <a href="https://github.com/rgdevment/LinkUnbound/releases">
-    <img src="https://img.shields.io/github/v/release/rgdevment/LinkUnbound?include_prereleases&style=flat-square&label=Latest&color=0078D4" alt="Latest Release"/>
+  <a href="https://github.com/WeslyG/LinkUnbound/releases">
+    <img src="https://img.shields.io/github/v/release/WeslyG/LinkUnbound?include_prereleases&style=flat-square&label=Latest&color=0078D4" alt="Latest Release"/>
   </a>
   <img src="https://img.shields.io/badge/Platform-Windows-0078D4?style=flat-square" alt="Platform: Windows"/>
   <img src="https://img.shields.io/badge/Platform-macOS-000000?style=flat-square&logo=apple" alt="Platform: macOS"/>
   <a href="#license">
     <img src="https://img.shields.io/github/license/rgdevment/LinkUnbound?style=flat-square&color=lightgrey" alt="License GPL-3.0"/>
-  </a>
-  <a href="https://github.com/sponsors/rgdevment">
-    <img src="https://img.shields.io/badge/GitHub-Sponsor-EA4AAA?style=flat-square&logo=githubsponsors&logoColor=white" alt="Sponsor on GitHub"/>
-  </a>
-  <a href="https://buymeacoffee.com/rgdevment">
-    <img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-☕-FFDD00?style=flat-square&logo=buy-me-a-coffee&logoColor=black" alt="Buy Me a Coffee"/>
   </a>
 </p>
 
@@ -46,7 +40,7 @@
 </p>
 
 <p align="center">
-  <sub>Prefer a direct download? <a href="https://github.com/rgdevment/LinkUnbound/releases/latest">GitHub Releases</a> has standalone installers — Windows (.exe) · macOS (.dmg, one per chip)</sub>
+  <sub>Prefer a direct download? <a href="https://github.com/WeslyG/LinkUnbound/releases/latest">GitHub Releases</a> has standalone installers — Windows (.exe) · macOS (.dmg, one per chip)</sub>
 </p>
 
 <p align="center">
@@ -83,8 +77,6 @@ It is the missing piece for anyone who lives with more than one browser: work in
 - [FAQ](#faq)
 - [Alternatives](#alternatives)
 - [Localization](#localization)
-- [Other Tools by the Same Author](#other-tools-by-the-same-author)
-- [Support the Project](#support-the-project)
 - [Want to Help?](#want-to-help)
 - [License](#license)
 
@@ -134,7 +126,7 @@ winget install rgdevment.LinkUnbound
 
 LinkUnbound keeps itself up to date from then on, so `winget upgrade --all` leaves it alone; `winget upgrade rgdevment.LinkUnbound` still works when you name it.
 
-**Windows — standalone installer**: download from [GitHub Releases](https://github.com/rgdevment/LinkUnbound/releases/latest).
+**Windows — standalone installer**: download from [GitHub Releases](https://github.com/WeslyG/LinkUnbound/releases/latest).
 
 **macOS** — install via Homebrew (signed and notarized):
 
@@ -145,7 +137,7 @@ brew install --cask linkunbound          # stable
 brew install --cask linkunbound-beta     # pre-release, while one is out
 ```
 
-Or download the `.dmg` directly from [GitHub Releases](https://github.com/rgdevment/LinkUnbound/releases/latest). There are two: `aarch64` for Apple Silicon and `x86_64` for Intel — Apple menu › *About This Mac* says which one yours is. Homebrew picks by itself.
+Or download the `.dmg` directly from [GitHub Releases](https://github.com/WeslyG/LinkUnbound/releases/latest). There are two: `aarch64` for Apple Silicon and `x86_64` for Intel — Apple menu › *About This Mac* says which one yours is. Homebrew picks by itself.
 
 <details>
 <summary><strong>Windows standalone: security warnings</strong></summary>
@@ -256,7 +248,7 @@ For responsible disclosure and security contact info, see [SECURITY.md](SECURITY
 - **Browsers** — what was detected, with profiles; hide, duplicate, or add a custom one with its arguments, and look for browsers again after installing one
 - **Application** — theme, language, picker look, start at sign-in, the global shortcut, background update checks
 - **Maintenance** — the two that destroy something: reset the configuration, and remove LinkUnbound from the system's list
-- **About** — version, licence, the update button, the candidate-versions switch, the diagnostic report when something goes wrong, and support links
+- **About** — version, licence, the update button, the candidate-versions switch, and support links
 
 **Updates.** Every six hours the resident asks the release feed, without a window. A newer version shows up as a strip atop the picker and in About; **Update** downloads the signed installer and runs it, and the resident comes back on its own. A copy from the Microsoft Store updates through the Store; a Homebrew copy updates itself the same way as a downloaded one (the cask says `auto_updates`), and `brew upgrade` works as well. A winget copy updates itself too; its manifest keeps it out of `winget upgrade --all`, and `winget upgrade rgdevment.LinkUnbound` works when named. Turn the background check off under Application if you prefer to ask by hand.
 
@@ -333,45 +325,6 @@ LinkUnbound supports English and Spanish with automatic language detection. You 
 | Spanish  | es    | Complete |
 
 Want to add your language? See the [translation guide](CONTRIBUTING.md#adding-a-translation) in CONTRIBUTING.md.
-
----
-
-## Other Tools by the Same Author
-
-Same idea, same terms: free, open source, no ads, no telemetry, everything local. If you like LinkUnbound, you might also find these useful:
-
-<table>
-  <tr>
-    <td width="96" align="center">
-      <a href="https://www.tisty.app/"><img src="app/src/assets/tisty.svg" alt="Tisty the beaver, mascot of Tisty, free open source notes, documents and tasks" width="72"/></a>
-    </td>
-    <td><b><a href="https://www.tisty.app/">Tisty</a></b> — Notes, documents and tasks kept as plain files on your own disk, readable without the application. Windows and macOS.</td>
-  </tr>
-  <tr>
-    <td width="96" align="center">
-      <a href="https://www.copanda.app/"><img src="app/src/assets/copanda.svg" alt="CoPanda the panda, mascot of CoPanda, free open source clipboard manager" width="72"/></a>
-    </td>
-    <td><b><a href="https://www.copanda.app/">CoPanda</a></b>, formerly CopyPaste — A local-first clipboard manager that keeps a searchable history and ignores what comes from a password manager. Windows and macOS.</td>
-  </tr>
-</table>
-
----
-
-## Support the Project
-
-LinkUnbound is free and will always be free. No ads, no premium tiers, no paywalls. If it saves you time and you want to support continued development, sponsor it on GitHub or buy me a coffee:
-
-<p align="center">
-  <a href="https://github.com/sponsors/rgdevment">
-    <img src="https://img.shields.io/badge/GitHub-Sponsor-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="Sponsor on GitHub"/>
-  </a>
-  &nbsp;
-  <a href="https://buymeacoffee.com/rgdevment">
-    <img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-%E2%98%95-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black" alt="Buy Me a Coffee"/>
-  </a>
-</p>
-
-Every contribution helps keep these tools alive and maintained. But if you can't or don't want to donate — that's completely fine. Star the repo, share it with someone, or just use it. That's enough.
 
 ---
 

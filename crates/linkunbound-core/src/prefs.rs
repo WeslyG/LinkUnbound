@@ -16,6 +16,7 @@ pub enum Locale {
     System,
     Spanish,
     English,
+    Russian,
 }
 
 /// The picker's look: rows under the link, the way 1.x users know it, the bear's cards without
@@ -63,6 +64,12 @@ pub struct Preferences {
     /// settings window ever asks, and only while it is open.
     #[serde(default = "yes")]
     pub looks_for_updates: bool,
+    #[serde(default = "yes")]
+    pub domain_lists_enabled: bool,
+    #[serde(default)]
+    pub domain_lists_auto_refresh: bool,
+    #[serde(default = "default_domain_list_hours")]
+    pub domain_lists_refresh_hours: u16,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub here_since: Option<u64>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
@@ -82,6 +89,10 @@ const fn yes() -> bool {
     true
 }
 
+const fn default_domain_list_hours() -> u16 {
+    24
+}
+
 impl Default for Preferences {
     fn default() -> Self {
         Self {
@@ -94,6 +105,9 @@ impl Default for Preferences {
             picker_style: PickerStyle::default(),
             picker_position: PickerPosition::default(),
             looks_for_updates: true,
+            domain_lists_enabled: true,
+            domain_lists_auto_refresh: false,
+            domain_lists_refresh_hours: default_domain_list_hours(),
             here_since: None,
             asked_for_a_star: false,
             news_seen: None,
@@ -103,6 +117,12 @@ impl Default for Preferences {
 }
 
 impl Preferences {
+    pub fn domain_list_refresh_interval(&self) -> std::time::Duration {
+        std::time::Duration::from_secs(
+            u64::from(self.domain_lists_refresh_hours.clamp(6, 168)) * 3600,
+        )
+    }
+
     /// The bear became everybody's picker once, whatever was chosen before; the move is written
     /// down so a style picked afterwards stands. Returns the style left behind, when it was not
     /// already the bear, so the person can be told how to get it back.
@@ -138,6 +158,7 @@ impl Preferences {
                 self.locale = match said.to_ascii_lowercase().as_str() {
                     "es" => Locale::Spanish,
                     "en" => Locale::English,
+                    "ru" => Locale::Russian,
                     _ => Locale::System,
                 };
             }
@@ -174,6 +195,14 @@ fn shortcut_of(said: &str) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn existing_list_rules_keep_working_without_automatic_download_permission() {
+        let existing: super::Preferences = serde_json::from_str(r#"{"schema_version":1}"#).unwrap();
+        assert!(existing.domain_lists_enabled);
+        assert!(!existing.domain_lists_auto_refresh);
+        assert_eq!(existing.domain_list_refresh_interval().as_secs(), 24 * 3600);
+    }
+
     use super::{Locale, PickerPosition, PickerStyle, Preferences, Theme};
 
     #[test]

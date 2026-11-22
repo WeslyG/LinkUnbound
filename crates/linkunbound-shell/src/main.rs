@@ -300,7 +300,8 @@ struct Fired {
 
 /// A rule that cannot be honoured falls through to the picker, never elsewhere.
 fn answered_by_rule(url: &str, source: Option<&Origin>) -> Option<Fired> {
-    let rules = store()
+    let store = store();
+    let rules = store
         .rules()
         .map_err(|why| {
             notice::troubled("rules", &why.to_string(), |words| {
@@ -312,7 +313,13 @@ fn answered_by_rule(url: &str, source: Option<&Origin>) -> Option<Fired> {
         })
         .ok()?;
     let host = host_of(url)?;
-    let rule = rules.resolve_from(url, &host, source)?;
+    let rule = rules.resolve_with_lists(url, &host, source, |list| {
+        if !store.prefs().domain_lists_enabled {
+            return None;
+        }
+        let domains = linkunbound_core::domain_lists::read(store.dir(), list)?;
+        Some(linkunbound_core::domain_lists::matches(&domains, &host))
+    })?;
     let browsers = catalogue();
     let browser = browsers
         .iter()
@@ -335,7 +342,7 @@ fn answered_by_rule(url: &str, source: Option<&Origin>) -> Option<Fired> {
         });
     })
     .ok()?;
-    store().note_picked();
+    store.note_picked();
     Some(Fired {
         rule_id: rule.id.clone(),
         browser,
@@ -754,6 +761,9 @@ impl Ui {
         let look = || {
             if store().prefs().looks_for_updates {
                 let _ = run_settings(&["--look"]);
+            }
+            if !linkunbound_core::domain_lists::due_for(&store()).is_empty() {
+                let _ = run_settings(&["--refresh-domain-lists"]);
             }
         };
         self.looker.start(

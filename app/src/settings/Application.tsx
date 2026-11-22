@@ -3,14 +3,16 @@ import { useEffect, useState } from "react";
 import { type Key, type Language, spoken, useSpoken, useWords } from "../i18n";
 import { saidPlainly } from "../refusal";
 import { refresh } from "../theme";
+import DomainListsSettings, { type DomainListPreferences } from "./DomainListsSettings";
+import type { DomainList } from "./domainLists";
 import { Card, Line, Section, Switch } from "./parts";
 
 type Theme = "system" | "light" | "dark";
-type Locale = "system" | "spanish" | "english";
+type Locale = "system" | "spanish" | "english" | "russian";
 type PickerStyle = "bear" | "classic" | "sheet" | "compact";
 type PickerPosition = "pointer" | "center";
 
-type Preferences = {
+type Preferences = DomainListPreferences & {
   schema_version: number;
   theme: Theme;
   locale: Locale;
@@ -22,6 +24,7 @@ type Preferences = {
 };
 
 type Settings = { prefs: Preferences; shortcut_held: string | null; language: string };
+type RuleStatus = { kind: string; source_app: string | null; resolved: boolean };
 
 const THEMES: { id: Theme; label: Key }[] = [
   { id: "system", label: "themeAuto" },
@@ -33,6 +36,7 @@ const LOCALES: { id: Locale; label: Key }[] = [
   { id: "system", label: "localeAuto" },
   { id: "spanish", label: "localeSpanish" },
   { id: "english", label: "localeEnglish" },
+  { id: "russian", label: "localeRussian" },
 ];
 
 const PICKERS: { id: PickerStyle; label: Key }[] = [
@@ -113,17 +117,20 @@ export default function Application({
   startupIsOurs,
   onSystem,
   onLanguage,
+  onConnectList,
 }: {
   startsWithSystem: boolean;
   startupIsOurs: boolean;
   onSystem: (command: string, enabled: boolean) => void;
   onLanguage: (next: Language) => void;
+  onConnectList?: (list: DomainList) => void;
 }) {
   const t = useWords();
   const language = useSpoken();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [capturing, setCapturing] = useState(false);
+  const [hasFallback, setHasFallback] = useState<boolean | null>(null);
 
   const [previewing, setPreviewing] = useState(false);
   const preview = () => {
@@ -154,6 +161,13 @@ export default function Application({
 
   useEffect(() => {
     void invoke<Settings>("prefs_get").then(setSettings).catch(noop);
+    void invoke<RuleStatus[]>("rules_list")
+      .then((rules) =>
+        setHasFallback(
+          rules.some((rule) => rule.kind === "any" && rule.source_app === null && rule.resolved),
+        ),
+      )
+      .catch(() => setHasFallback(false));
   }, []);
 
   if (!settings) return null;
@@ -179,46 +193,66 @@ export default function Application({
             />
           </Line>
           <Line title={t("appLanguage")}>
-            <Choice
-              options={LOCALES}
+            <select
+              aria-label={t("appLanguage")}
               value={prefs.locale}
-              label={t("appLanguage")}
-              onPick={(locale) => apply({ locale })}
-            />
+              onChange={(event) => apply({ locale: event.currentTarget.value as Locale })}
+              className="rounded-md border border-black/[0.12] bg-white px-2.5 py-1.5 text-[12px] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#2F62D8] dark:border-white/[0.12] dark:bg-[#1B1D23] dark:focus-visible:outline-[#6E9BFF]"
+            >
+              {LOCALES.map(({ id, label }) => (
+                <option key={id} value={id}>
+                  {t(label)}
+                </option>
+              ))}
+            </select>
           </Line>
         </Card>
       </Section>
 
       <Section title={t("appPicker")}>
-        <Card>
-          <Line title={t("pickerLook")}>
-            <div className="flex shrink-0 flex-col items-end gap-1.5">
+        {hasFallback && (
+          <p id="picker-rule-note" className="text-[11.5px] text-neutral-600 dark:text-[#A1A7B3]">
+            {t("pickerRuleNote")}
+          </p>
+        )}
+        <fieldset
+          aria-label={t("appPicker")}
+          aria-describedby={hasFallback ? "picker-rule-note" : undefined}
+          disabled={hasFallback !== false}
+          className="min-w-0 disabled:opacity-60"
+        >
+          <Card>
+            <Line title={t("pickerLook")}>
+              <div className="flex shrink-0 flex-col items-end gap-1.5">
+                <Choice
+                  options={PICKERS}
+                  value={prefs.picker_style}
+                  label={t("pickerLook")}
+                  onPick={(picker_style) =>
+                    apply({ picker_style }, previewing ? preview : undefined)
+                  }
+                />
+                <button
+                  type="button"
+                  onClick={preview}
+                  className="text-[11.5px] text-[#2F62D8] hover:underline dark:text-[#6E9BFF]"
+                >
+                  {t("pickerPreview")}
+                </button>
+              </div>
+            </Line>
+            <Line title={t("appPickerPosition")} note={t("appPickerPositionNote")}>
               <Choice
-                options={PICKERS}
-                value={prefs.picker_style}
-                label={t("pickerLook")}
-                onPick={(picker_style) => apply({ picker_style }, previewing ? preview : undefined)}
+                options={POSITIONS}
+                value={prefs.picker_position}
+                label={t("appPickerPosition")}
+                onPick={(picker_position) =>
+                  apply({ picker_position }, previewing ? preview : undefined)
+                }
               />
-              <button
-                type="button"
-                onClick={preview}
-                className="text-[11.5px] text-[#2F62D8] hover:underline dark:text-[#6E9BFF]"
-              >
-                {t("pickerPreview")}
-              </button>
-            </div>
-          </Line>
-          <Line title={t("appPickerPosition")} note={t("appPickerPositionNote")}>
-            <Choice
-              options={POSITIONS}
-              value={prefs.picker_position}
-              label={t("appPickerPosition")}
-              onPick={(picker_position) =>
-                apply({ picker_position }, previewing ? preview : undefined)
-              }
-            />
-          </Line>
-        </Card>
+            </Line>
+          </Card>
+        </fieldset>
       </Section>
 
       <Section title={t("appStartup")}>
@@ -281,6 +315,8 @@ export default function Application({
           </Line>
         </Card>
       </Section>
+
+      <DomainListsSettings prefs={prefs} apply={apply} onConnectList={onConnectList} />
 
       <Section title={t("appUpdates")}>
         <Card>

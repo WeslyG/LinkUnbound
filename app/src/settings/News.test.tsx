@@ -86,7 +86,7 @@ describe("the news after an update", () => {
     waiting(["2.6.0"]);
     render(<News />);
     await userEvent.click(await screen.findByRole("button", { name: "Ver todas las versiones" }));
-    expect(opened).toEqual(["https://github.com/rgdevment/LinkUnbound/releases"]);
+    expect(opened).toEqual(["https://github.com/WeslyG/LinkUnbound/releases"]);
   });
 
   it("shows nothing for a version the news does not know", async () => {

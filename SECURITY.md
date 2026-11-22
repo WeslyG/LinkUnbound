@@ -23,7 +23,7 @@ This is a personal open source project, not a company product. Security here is 
 - **Open Source** — Every line of code is public under GPLv3. You can inspect, audit, and verify everything.
 - **Dependency Updates** — Dependencies are regularly updated to patch known vulnerabilities.
 - **Code Reviews** — All contributions go through review before merging.
-- **No Link History** — Links are routed in memory and never kept. The only addresses written to disk are the exact-address rules you ask it to remember, and the diagnostic report cuts those down to their host. The local error log cuts any address down to its host, or drops it when it has none, and never leaves the machine on its own.
+- **No Link History** — Links are routed in memory and never kept. The only addresses written to disk are the exact-address rules you ask it to remember. The local error log cuts any address down to its host, or drops it when it has none, and never leaves the machine on its own.
 
 ### Links From Other Applications
 
@@ -70,7 +70,6 @@ If you discover a security vulnerability in LinkUnbound, please report it respon
 - Bypass of domain rule matching
 - Command injection through browser arguments or URL handling
 - Data leakage or unintended storage
-- A path, query or credential from a rule surviving into the diagnostic report
 
 **Not security issues:**
 

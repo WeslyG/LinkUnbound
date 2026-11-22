@@ -26,7 +26,7 @@ pub enum StoreError {
 /// Writes through a sibling temporary file and renames over the target. A crash
 /// or a full disk mid-write then leaves the previous rules intact rather than a
 /// half-written file that reads as no rules at all.
-fn save_atomically(path: &Path, body: &str) -> Result<(), StoreError> {
+pub(crate) fn save_atomically(path: &Path, body: &str) -> Result<(), StoreError> {
     let fail = |source| StoreError::Write {
         path: path.to_path_buf(),
         source,
@@ -102,7 +102,10 @@ const WAITED_FOR_THE_LOCK: Duration = Duration::from_secs(2);
 /// The system's own file lock, not a file's presence: it goes with the process that held it,
 /// so one that died never locks the set out, and nothing has to guess from a date when a lock
 /// was abandoned.
-fn guarded<T>(path: &Path, work: impl FnOnce() -> Result<T, StoreError>) -> Result<T, StoreError> {
+pub(crate) fn guarded<T>(
+    path: &Path,
+    work: impl FnOnce() -> Result<T, StoreError>,
+) -> Result<T, StoreError> {
     let lock = path.with_extension("lock");
     let fail = |source| StoreError::Write {
         path: lock.clone(),

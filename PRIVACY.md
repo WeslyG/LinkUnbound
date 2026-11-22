@@ -105,9 +105,7 @@ without, such as `mailto:` or `www.`, is dropped whole; your user folder is writ
 the account name in any other `Users` or `home` path is replaced by `…`. Only the latest 200 lines
 are kept.
 
-The log is never sent anywhere. It leaves your computer only if you share it yourself: it is
-included, already redacted, at the end of the diagnostic report (Settings → **About** → *Save
-report*), and you can read or delete `errors.log` whenever you like.
+The log stays on your computer. It is stored in the app data folder as errors.log.
 
 ### Extracted Icons
 
@@ -131,7 +129,7 @@ All data is stored locally under your user profile.
 | Browsers | `%LOCALAPPDATA%\LinkUnbound\browsers.json`       |
 | Rules    | `%LOCALAPPDATA%\LinkUnbound\rules.json`          |
 | Settings | `%LOCALAPPDATA%\LinkUnbound\preferences.json`    |
-| Last update check | `%LOCALAPPDATA%\LinkUnbound\update.json` (and `updating.json` while one installs) |
+| Last update check | `%LOCALAPPDATA%\LinkUnbound\fork-update.json` (and `fork-updating.json` while one installs) |
 | Global shortcut held | `%LOCALAPPDATA%\LinkUnbound\shortcut` |
 | Error log | `%LOCALAPPDATA%\LinkUnbound\errors.log` (latest 200 lines, redacted) |
 | Lock files | `rules.lock`, `browsers.lock`, `preferences.lock`, empty |
@@ -145,7 +143,7 @@ All data is stored locally under your user profile.
 | Browsers | `~/Library/Application Support/LinkUnbound/browsers.json`        |
 | Rules    | `~/Library/Application Support/LinkUnbound/rules.json`           |
 | Settings | `~/Library/Application Support/LinkUnbound/preferences.json`     |
-| Last update check | `~/Library/Application Support/LinkUnbound/update.json` (and `updating.json` while one installs) |
+| Last update check | `~/Library/Application Support/LinkUnbound/fork-update.json` (and `fork-updating.json` while one installs) |
 | Global shortcut held | `~/Library/Application Support/LinkUnbound/shortcut` |
 | Error log | `~/Library/Application Support/LinkUnbound/errors.log` (latest 200 lines, redacted) |
 | Resident's socket | `~/Library/Application Support/LinkUnbound/shell.sock` |
@@ -183,9 +181,9 @@ LinkUnbound makes **one type of network request**:
 | Detail        | Value                                                                    |
 | :------------ | :----------------------------------------------------------------------- |
 | **Purpose**   | Check if a newer version of LinkUnbound is available                     |
-| **URL**       | `https://raw.githubusercontent.com/rgdevment/LinkUnbound/manifest/release-manifest.json` |
+| **URL**       | `https://raw.githubusercontent.com/WeslyG/LinkUnbound/manifest/release-manifest.json` |
 | **Method**    | GET (read-only)                                                          |
-| **Data sent** | Standard HTTP headers only — no user data                                |
+| **Data sent** | Standard HTTP headers, including the app version in User-Agent — no links, rules or browser data                                |
 | **Frequency** | At most once every 24 hours; asked for 20 seconds after the resident starts and every six hours after, and whenever the settings window opens |
 | **Timeout**   | 5 seconds                                                                |
 | **On failure**| Silent — the app continues working normally                              |
@@ -262,39 +260,6 @@ Settings → **Maintenance** tab provides:
 3. Optional: remove preferences (`~/Library/Preferences/dev.rgdevment.linkunbound.plist`, and `com.rgdevment.linkunbound.plist` left by 1.x), saved app state under `~/Library/Saved Application State/`, and the login item under System Settings → General → Login Items if one was enabled.
 
 After these steps, no LinkUnbound data remains on your system.
-
----
-
-## Diagnostics Export
-
-LinkUnbound can write a diagnostic report for troubleshooting: Settings → **About** → *Save report*. The file is written locally and **never sent anywhere** — you decide whether to share it and with whom.
-
-It is a single Markdown file named `linkunbound-diagnostico.md`. On Windows it is written to your Desktop; where that folder does not exist, it goes to the system's temporary directory. The message on screen names the exact path it landed in.
-
-### What the report contains
-
-| Section | Content |
-| :-- | :-- |
-| Heading | The version of LinkUnbound you are running |
-| `Sistema` | Operating system, whether LinkUnbound is registered and default, the health check, how many associations it holds, whether it starts with the system, whether Edge is installed, and the names of the browsers it detected |
-| `Preferencias` | Theme, language, the global shortcut, and whether a rule announces itself when it decides |
-| `Reglas` | Every rule you have: what it matches, the application it is tied to when it has one, the browser it opens in, and whether it opens privately |
-| `Errores recientes` | The lines of `errors.log`: when, what failed and why, with addresses cut to their host and your user folder written as `~` |
-
-### What the report does not contain
-
-- **The addresses you open.** It carries your rules, not your browsing. A rule for one exact
-  address is written as its scheme, host and port only (`https://mail.google.com/…`).
-- **Passwords, tokens or anything from a URL's authority** — the report drops them. The
-  rules file itself does not: a rule for one exact address keeps the whole address.
-- **Icons, executables or the contents of any browser profile.**
-
-**Worth knowing before you share one:** the rules section names the sites you
-wrote rules for and the applications they answer to — `desde ms-teams`, for
-example — and the system section lists the browsers installed on the machine.
-That is the point of the file, because a rule is usually what decided where a
-link went, but it is your information: open it and read it before attaching it
-to a public issue.
 
 ---
 

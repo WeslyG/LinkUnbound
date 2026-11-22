@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 import { useWords } from "../i18n";
 
 /// Shared so the three destructive spots agree on the focus handling a screen
@@ -6,12 +6,14 @@ import { useWords } from "../i18n";
 export default function Confirm({
   title,
   body,
+  children,
   go,
   onConfirm,
   onCancel,
 }: {
   title: string;
   body: string;
+  children?: ReactNode;
   go: string;
   onConfirm: () => void;
   onCancel: () => void;
@@ -43,6 +45,7 @@ export default function Confirm({
     >
       <p className="text-[12.5px] font-semibold">{title}</p>
       <p className="mt-1 text-[11.5px] text-neutral-500 dark:text-[#8B92A1]">{body}</p>
+      {children}
       <div className="mt-3 flex gap-2">
         <button
           type="button"

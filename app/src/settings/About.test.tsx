@@ -19,7 +19,7 @@ vi.mock("@tauri-apps/api/core", () => ({ invoke: (...a: unknown[]) => invoke(...
 const BUILD = {
   version: "2.0.0",
   license: "GPL-3.0-only",
-  repository: "https://github.com/rgdevment/LinkUnbound",
+  repository: "https://github.com/WeslyG/LinkUnbound",
   candidates: false,
   candidatesApply: true,
   keptByTheStore: false,
@@ -95,13 +95,12 @@ describe("about", () => {
     answers();
   });
 
-  it("names the licence, the ways to give and the sibling tools", async () => {
+  it("names the licence without linking to donations or other apps", async () => {
     show();
     expect(await screen.findByText("GPL-3.0-only")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Invítame un café/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Patrocinar en GitHub/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /CoPanda/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Tisty/ })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Invítame un café|Patrocinar|CoPanda|Tisty/ }),
+    ).toBeNull();
   });
 
   it("brings the welcome back whenever it is asked for", async () => {
@@ -131,24 +130,13 @@ describe("about", () => {
   /// back, and one that reaches nothing at all is what a plain anchor does here.
   it("hands every link to the system browser", async () => {
     show();
-    for (const name of [
-      "Patrocinar en GitHub",
-      "Invítame un café",
-      "Tisty",
-      "CoPanda",
-      "Abrir el repositorio",
-      "Informar de un problema",
-    ]) {
+    for (const name of ["Abrir el repositorio", "Informar de un problema"]) {
       await userEvent.click(screen.getByRole("button", { name: new RegExp(name) }));
     }
 
     expect(opened).toEqual([
-      "https://github.com/sponsors/rgdevment",
-      "https://buymeacoffee.com/rgdevment",
-      "https://www.tisty.app/",
-      "https://www.copanda.app/",
-      "https://github.com/rgdevment/LinkUnbound",
-      "https://github.com/rgdevment/LinkUnbound/issues",
+      "https://github.com/WeslyG/LinkUnbound",
+      "https://github.com/WeslyG/LinkUnbound/issues",
     ]);
   });
 
@@ -181,9 +169,11 @@ describe("about", () => {
     expect(screen.getByRole("button", { name: /Dar una estrella en GitHub/ })).toBeInTheDocument();
   });
 
-  it("says the copy is current when nothing newer was found", async () => {
+  it("identifies the fork before a successful update check", async () => {
     show();
-    expect(screen.getByText("Estás en la última versión")).toBeInTheDocument();
+    expect(
+      screen.getByText("Actualizaciones desde el fork de WeslyG en GitHub"),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Actualizar" })).toBeNull();
   });
 
@@ -211,7 +201,7 @@ describe("about", () => {
 
     show({ ...NEWER, route: "brew", installs: false });
     expect(screen.queryByRole("button", { name: "Actualizar" })).toBeNull();
-    expect(screen.getByText(/Mueve LinkUnbound a Aplicaciones/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Abrir versiones del fork" })).toBeInTheDocument();
   });
 
   it("offers what the store has even when nobody can say its number", () => {
@@ -407,7 +397,9 @@ describe("about", () => {
     await userEvent.click(
       await screen.findByRole("switch", { name: "Recibir versiones candidatas" }),
     );
-    expect(await screen.findByText("Estás en la última versión")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Actualizaciones desde el fork de WeslyG en GitHub"),
+    ).toBeInTheDocument();
   });
 
   /// A switch left on after the backend refused would claim a track the copy is not on.
@@ -428,31 +420,6 @@ describe("about", () => {
     expect(await screen.findByText(/GPL-3.0/)).toBeInTheDocument();
     cleanup();
     expect(screen.queryByText(/GPL-3.0/)).toBeNull();
-  });
-
-  /// The report is meant to be pasted into a public issue, so the screen has to
-  /// promise what the core actually redacts.
-  it("saves a report and says where it landed", async () => {
-    answers({
-      maintenance_report: () => Promise.resolve("C:/Users/x/Desktop/linkunbound-diagnostico.md"),
-    });
-    show();
-    await userEvent.click(await screen.findByRole("button", { name: "Guardar informe…" }));
-    expect(invoke).toHaveBeenCalledWith("maintenance_report");
-    expect(await screen.findByText(/linkunbound-diagnostico\.md/)).toBeInTheDocument();
-  });
-
-  it("saves the report without asking, since it destroys nothing", async () => {
-    show();
-    await userEvent.click(await screen.findByRole("button", { name: "Guardar informe…" }));
-    expect(screen.queryByRole("alertdialog")).toBeNull();
-  });
-
-  it("says a refusal instead of leaving the report looking saved", async () => {
-    answers({ maintenance_report: () => Promise.reject("the folder refused the write") });
-    show();
-    await userEvent.click(await screen.findByRole("button", { name: "Guardar informe…" }));
-    expect(await screen.findByText(/folder refused/)).toBeInTheDocument();
   });
 });
 

@@ -6,6 +6,7 @@ import { saidPlainly } from "./refusal";
 import About from "./settings/About";
 import Application from "./settings/Application";
 import Browsers from "./settings/Browsers";
+import type { DomainList } from "./settings/domainLists";
 import Maintenance from "./settings/Maintenance";
 import News from "./settings/News";
 import { Card, Line, Section, Switch } from "./settings/parts";
@@ -20,7 +21,7 @@ type Noticed = { prefs: { edge_warning_dismissed: boolean } & Record<string, unk
 
 type Legacy = { path: string; version: string | null };
 
-const RELEASES = "https://github.com/rgdevment/LinkUnbound/releases/latest";
+const RELEASES = "https://github.com/WeslyG/LinkUnbound/releases/latest";
 
 type Remedy = { label: Key; note?: Key } & { command: string; args?: Record<string, unknown> };
 
@@ -382,27 +383,28 @@ function Links({
 }
 
 export default function Settings() {
-  const [language, setLanguage] = useState<Language>("es");
+  const [language, setLanguage] = useState<Language | null>(null);
+  const ready = language !== null;
 
   useEffect(() => {
     void invoke<Spoken>("prefs_get")
       .then(({ language }) => setLanguage(spoken(language)))
-      .catch(noop);
+      .catch(() => setLanguage("en"));
   }, []);
 
   useEffect(() => {
+    if (!ready) return;
     const painted = setTimeout(() => {
       void invoke("settings_painted").catch(noop);
     }, 0);
     return () => clearTimeout(painted);
-  }, []);
+  }, [ready]);
 
-  // A screen reader picks its voice from this, so leaving it at the document's
-  // default reads Spanish with an English engine.
   useEffect(() => {
-    document.documentElement.lang = language;
+    if (language) document.documentElement.lang = language;
   }, [language]);
 
+  if (!language) return null;
   return (
     <Speaking value={language}>
       <Shell onLanguage={setLanguage} />
@@ -415,10 +417,12 @@ function Shell({ onLanguage }: { onLanguage: (next: Language) => void }) {
   const language = useSpoken();
   const { ready, nothingNewer, step, look, settled } = useUpdate();
   const [page, setPage] = useState<Page>(() => asked() ?? "app");
+  const [listToConnect, setListToConnect] = useState<DomainList | null>(null);
   // Opened on its own, it starts on Links while they are missing; a page already chosen wins.
   const placed = useRef(asked() !== null);
   const pick = useCallback((next: Page) => {
     placed.current = true;
+    setListToConnect(null);
     setPage(next);
   }, []);
   useEffect(() => {
@@ -520,7 +524,7 @@ function Shell({ onLanguage }: { onLanguage: (next: Language) => void }) {
           </p>
         )}
         {page === "links" && <Links state={state} onState={setState} change={change} run={run} />}
-        {page === "rules" && <Rules />}
+        {page === "rules" && <Rules initialList={listToConnect} />}
         {page === "browsers" && <Browsers />}
         {page === "app" && (
           <Application
@@ -528,6 +532,10 @@ function Shell({ onLanguage }: { onLanguage: (next: Language) => void }) {
             startupIsOurs={state?.startup_is_ours ?? true}
             onSystem={change}
             onLanguage={onLanguage}
+            onConnectList={(list) => {
+              pick("rules");
+              setListToConnect(list);
+            }}
           />
         )}
         {page === "care" && <Maintenance />}

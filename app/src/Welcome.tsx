@@ -12,7 +12,7 @@ const EVERY_SECOND = 1000;
 const LONG_ENOUGH_TO_READ = 1200;
 
 export default function Welcome() {
-  const [language, setLanguage] = useState<Language>("es");
+  const [language, setLanguage] = useState<Language | null>(null);
   const [shortcut, setShortcut] = useState<string | null>(null);
 
   useEffect(() => {
@@ -21,13 +21,14 @@ export default function Welcome() {
         setLanguage(spoken(said.language));
         setShortcut(said.prefs.shortcut);
       })
-      .catch(noop);
+      .catch(() => setLanguage("en"));
   }, []);
 
   useEffect(() => {
-    document.documentElement.lang = language;
+    if (language) document.documentElement.lang = language;
   }, [language]);
 
+  if (!language) return null;
   return (
     <Speaking value={language}>
       <Tour shortcut={shortcut} />

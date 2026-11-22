@@ -29,6 +29,16 @@ describe("catalogue", () => {
     expect(fill(SPEECH.en.associations, "2", "3")).toBe("2 of 3 associations");
   });
 
+  it("ships every Russian label with the same placeholders", () => {
+    expect(Object.keys(SPEECH.ru).sort()).toEqual(KEYS.slice().sort());
+    expect(Object.keys(MAC.ru).sort()).toEqual(MAC_KEYS.slice().sort());
+    for (const key of KEYS) {
+      expect(SPEECH.ru[key].trim(), key).not.toBe("");
+      expect(SPEECH.ru[key].match(/\{\}/g), key).toEqual(SPEECH.en[key].match(/\{\}/g));
+    }
+    expect(spoken("ru")).toBe("ru");
+  });
+
   it("says the same things about a Mac in both languages", () => {
     const alphabetically = (a: string, b: string) => a.localeCompare(b);
     expect(Object.keys(MAC.en).sort(alphabetically)).toEqual(MAC_KEYS.slice().sort(alphabetically));
@@ -57,9 +67,10 @@ describe("catalogue", () => {
     });
   });
 
-  it("only takes english when the backend actually said so", () => {
+  it("uses English when the backend sends an unsupported or missing language", () => {
     expect(spoken("en")).toBe("en");
     expect(spoken("es")).toBe("es");
-    expect(spoken(undefined)).toBe("es");
+    expect(spoken(undefined)).toBe("en");
+    expect(spoken("de")).toBe("en");
   });
 });

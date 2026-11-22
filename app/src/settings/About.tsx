@@ -1,9 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useCallback, useEffect, useRef, useState } from "react";
-import copanda from "../assets/copanda.svg";
 import bear from "../assets/linkunbound.svg";
-import tisty from "../assets/tisty.svg";
 import { type Key, useSpoken, useWords } from "../i18n";
 import { composed } from "../markdown";
 import { offerMoved, saidPlainly } from "../refusal";
@@ -12,11 +10,7 @@ import { Card, Line, Switch } from "./parts";
 import Star from "./Star";
 import type { Ready, StoreWait, Underway } from "./update";
 
-const REPO = "https://github.com/rgdevment/LinkUnbound";
-const COFFEE = "https://buymeacoffee.com/rgdevment";
-const COPANDA = "https://www.copanda.app/";
-const TISTY = "https://www.tisty.app/";
-const SPONSOR = "https://github.com/sponsors/rgdevment";
+const REPO = "https://github.com/WeslyG/LinkUnbound";
 const RATING = "ms-windows-store://review/?ProductId=9N9F7C8Q43KC";
 const SHELF = "ms-windows-store://downloadsandupdates";
 const ALTERNATIVETO = "https://alternativeto.net/software/linkunbound/";
@@ -40,7 +34,7 @@ const WAITS: Record<StoreWait, Key> = {
 function howItInstalls(newer: Ready): Key {
   if (newer.installs) return newer.route === "store" ? "updateStore" : "updateAsk";
   if (newer.coming) return WAITS[newer.coming];
-  return newer.route === "store" ? "updateLanded" : "updateFromMount";
+  return newer.route === "store" ? "updateLanded" : "updateManualFork";
 }
 
 function headline(newer: Ready): Key {
@@ -121,28 +115,6 @@ function Gives({
   );
 }
 
-function Tool({
-  icon,
-  said,
-  note,
-  onPick,
-}: {
-  icon: string;
-  said: string;
-  note: string;
-  onPick: () => void;
-}) {
-  return (
-    <button type="button" className="tool" onClick={onPick}>
-      <img src={icon} alt="" className="ico" />
-      <span className="min-w-0 flex-1">
-        <b>{said}</b>
-        <span>{note}</span>
-      </span>
-    </button>
-  );
-}
-
 function Pip({ ok }: { ok?: boolean }) {
   return <span aria-hidden="true" className={ok ? "pip ok" : "pip"} />;
 }
@@ -188,9 +160,11 @@ function Offer({
             {looking
               ? t("lookingNow")
               : t(
-                  nothingNewer || !build?.keptByTheStore || build.notSold
-                    ? nothingFound(build)
-                    : "lookStoreKeeps",
+                  !nothingNewer && !build?.keptByTheStore
+                    ? "updateForkSource"
+                    : nothingNewer || build?.notSold
+                      ? nothingFound(build)
+                      : "lookStoreKeeps",
                 )}
           </b>
         </span>
@@ -233,6 +207,15 @@ function Offer({
       {!step && newer.coming && (
         <button type="button" onClick={() => void openUrl(SHELF).catch(noop)} className="mild">
           {t("updateOpenShop")}
+        </button>
+      )}
+      {!step && !newer.installs && newer.route !== "store" && (
+        <button
+          type="button"
+          onClick={() => void openUrl(`${REPO}/releases`).catch(noop)}
+          className="mild"
+        >
+          {t("updateForkReleases")}
         </button>
       )}
       {!step && newer.installs && (
@@ -329,7 +312,6 @@ export default function About({
   const [build, setBuild] = useState<Build | null>(null);
   const [trouble, setTrouble] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
-  const [saved, setSaved] = useState<string | null>(null);
   const [shown, setShown] = useState<{ which: Shelf; text: string } | null>(null);
   const [reading, setReading] = useState(false);
   const [refused, setRefused] = useState<Shelf | null>(null);
@@ -343,13 +325,6 @@ export default function About({
       .then((text) => setShown({ which, text }))
       .catch(() => setRefused(which))
       .finally(() => setReading(false));
-  };
-
-  const report = () => {
-    setProblem(null);
-    invoke<string>("maintenance_report")
-      .then(setSaved)
-      .catch((e: unknown) => setProblem(saidPlainly(language, e)));
   };
 
   const look = useCallback(() => {
@@ -444,14 +419,13 @@ export default function About({
 
       {starring && <Star store={store} onSettled={onStarSettled} />}
 
-      <Rule said={t("aboutSponsorSection")} />
-      <p className="quiet">{t("aboutSupportWhy")}</p>
+      <Rule said={t("aboutProject")} />
       <div className="gives">
         {offerStar && (
           <Gives
             wide={lopsided}
             said={t("aboutStar")}
-            where="github.com/rgdevment/LinkUnbound"
+            where="github.com/WeslyG/LinkUnbound"
             onPick={() => void openUrl(REPO).catch(noop)}
           >
             <path
@@ -472,62 +446,11 @@ export default function About({
             />
           </Gives>
         )}
-        <Gives
-          said={t("aboutGitHubSponsor")}
-          where="github.com/sponsors"
-          onPick={() => void openUrl(SPONSOR).catch(noop)}
-        >
-          <path
-            fill="#db61a2"
-            d="M8 14.25 6.84 13.2C2.72 9.47 0 7.01 0 4.5 0 2.42 1.57 1 3.5 1c1.1 0 2.16.51 2.84 1.32h1.32C8.34 1.51 9.4 1 10.5 1 12.43 1 14 2.42 14 4.5c0 2.51-2.72 4.97-6.84 8.7L8 14.25Z"
-          />
-        </Gives>
-        <Gives
-          said={t("aboutSponsor")}
-          where="buymeacoffee.com"
-          onPick={() => void openUrl(COFFEE).catch(noop)}
-        >
-          <path
-            fill="#c8892a"
-            d="M2 5h9v5a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V5Zm10 0h1.5A2.5 2.5 0 0 1 16 7.5 2.5 2.5 0 0 1 13.5 10H12V5ZM2 14h9v1H2v-1Z"
-          />
-        </Gives>
       </div>
-
-      <Rule said={t("aboutOtherTools")} />
-      <Tool
-        icon={tisty}
-        said={t("aboutTisty")}
-        note={t("aboutTistyNote")}
-        onPick={() => void openUrl(TISTY).catch(noop)}
-      />
-      <Tool
-        icon={copanda}
-        said={t("aboutCoPanda")}
-        note={t("aboutCoPandaNote")}
-        onPick={() => void openUrl(COPANDA).catch(noop)}
-      />
-
-      <Rule said={t("troubleSection")} />
-      <p className="trouble">
-        {t("reportWhat")} <b>{t("reportStays")}</b> {t("reportPick")}
-      </p>
-      <div className="row">
-        <button type="button" onClick={report} className="mild">
-          {t("reportGo")}
-        </button>
-        <button
-          type="button"
-          onClick={() => void openUrl(`${REPO}/issues`).catch(noop)}
-          className="mild"
-        >
-          {t("aboutIssue")}
-        </button>
-      </div>
-      {saved && <p className="saved">{t("reportSaved", saved)}</p>}
 
       <div className="links">
         <External href={build?.repository ?? REPO}>{t("aboutRepo")}</External>
+        <External href={`${REPO}/issues`}>{t("aboutIssue")}</External>
         <External href={ALTERNATIVETO}>AlternativeTo</External>
         <External href={`${REPO}/blob/main/PRIVACY.md`}>{t("aboutPrivacyLink")}</External>
         <button
