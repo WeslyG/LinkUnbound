@@ -91,6 +91,8 @@ jobs:
             cargo check -p "$one" --all-targets
           done
       - run: cargo nextest run --workspace --no-tests=pass
+      - name: Register, rebind, and release native global hotkeys
+        run: cargo run --locked -p linkunbound-shell --example native_hotkey
       # Compiling the doc tests is most of what they cost, and macOS is the job with time to spare.
       - if: runner.os == 'macOS'
         run: cargo test --doc --workspace
