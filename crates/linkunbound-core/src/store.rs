@@ -111,15 +111,7 @@ pub(crate) fn guarded<T>(
         path: lock.clone(),
         source,
     };
-    if let Some(parent) = lock.parent() {
-        let _ = fs::create_dir_all(parent);
-    }
-    let held = fs::OpenOptions::new()
-        .create(true)
-        .truncate(false)
-        .write(true)
-        .open(&lock)
-        .map_err(fail)?;
+    let held = open_lock(&lock).map_err(fail)?;
     let deadline = std::time::Instant::now() + WAITED_FOR_THE_LOCK;
     loop {
         match held.try_lock() {
@@ -141,6 +133,37 @@ pub(crate) fn guarded<T>(
             Err(fs::TryLockError::Error(why)) => return Err(fail(why)),
         }
     }
+}
+
+pub(crate) fn try_guarded<T>(
+    path: &Path,
+    work: impl FnOnce() -> T,
+) -> Result<Option<T>, StoreError> {
+    let lock = path.with_extension("lock");
+    let fail = |source| StoreError::Write {
+        path: lock.clone(),
+        source,
+    };
+    let held = open_lock(&lock).map_err(fail)?;
+    match held.try_lock() {
+        Ok(()) => Ok(Some(work())),
+        Err(fs::TryLockError::WouldBlock) => Ok(None),
+        Err(fs::TryLockError::Error(why)) if why.kind() == std::io::ErrorKind::Unsupported => {
+            Ok(Some(work()))
+        }
+        Err(fs::TryLockError::Error(why)) => Err(fail(why)),
+    }
+}
+
+fn open_lock(lock: &Path) -> std::io::Result<fs::File> {
+    if let Some(parent) = lock.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    fs::OpenOptions::new()
+        .create(true)
+        .truncate(false)
+        .write(true)
+        .open(lock)
 }
 
 /// `serde_json` refuses the mark Windows editors prepend, which would discard a

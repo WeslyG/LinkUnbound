@@ -749,55 +749,52 @@ fn icon_pixels(icon: HICON) -> Option<(u32, u32, Vec<u8>)> {
 }
 
 /// Asks the shell for the icon at a chosen size, which reaches the high
-/// resolution variants inside the executable. `SHGetFileInfoW` only ever returns
-/// the 32 px one, and shrinking that into a list row loses the detail.
-fn shell_image(path: &Path, side: i32) -> Option<(u32, u32, Vec<u8>)> {
+/// resolution variants inside the executable. The fallback uses the system
+/// icon size.
+fn shell_image(
+    path: windows::core::PCWSTR,
+    side: i32,
+    icon_only: bool,
+) -> Option<(u32, u32, Vec<u8>)> {
     use windows::Win32::Foundation::SIZE;
-    use windows::Win32::System::Com::{COINIT_APARTMENTTHREADED, CoInitializeEx, CoUninitialize};
     use windows::Win32::UI::Shell::{
-        IShellItemImageFactory, SHCreateItemFromParsingName, SIIGBF_BIGGERSIZEOK,
+        IShellItemImageFactory, SHCreateItemFromParsingName, SIIGBF_BIGGERSIZEOK, SIIGBF_ICONONLY,
     };
 
-    let mut wide: Vec<u16> = path.as_os_str().encode_wide().collect();
-    wide.push(0);
+    const E_PENDING: windows::core::HRESULT = windows::core::HRESULT(0x8000_000A_u32.cast_signed());
 
-    unsafe {
-        let started = CoInitializeEx(None, COINIT_APARTMENTTHREADED).is_ok();
-        let factory: Option<IShellItemImageFactory> =
-            SHCreateItemFromParsingName(windows::core::PCWSTR(wide.as_ptr()), None).ok();
-        let out = factory
-            .and_then(|f| {
-                f.GetImage(SIZE { cx: side, cy: side }, SIIGBF_BIGGERSIZEOK)
-                    .ok()
-            })
-            .and_then(|handle| {
-                let pixels = bitmap_pixels(handle);
-                let _ = DeleteObject(handle.into());
-                pixels
-            });
-        if started {
-            CoUninitialize();
+    let factory: IShellItemImageFactory =
+        unsafe { SHCreateItemFromParsingName(path, None) }.ok()?;
+    let size = SIZE { cx: side, cy: side };
+    let flags = if icon_only {
+        SIIGBF_BIGGERSIZEOK | SIIGBF_ICONONLY
+    } else {
+        SIIGBF_BIGGERSIZEOK
+    };
+    // An overlapping Shell request can leave this icon pending for a moment.
+    let mut retries = 3;
+    let handle = loop {
+        match unsafe { factory.GetImage(size, flags) } {
+            Ok(handle) => break handle,
+            Err(error) if error.code() == E_PENDING && retries > 0 => {
+                retries -= 1;
+                std::thread::sleep(std::time::Duration::from_millis(10));
+            }
+            Err(_) => return None,
         }
-        out
+    };
+    let pixels = bitmap_pixels(handle);
+    unsafe {
+        let _ = DeleteObject(handle.into());
     }
+    pixels
 }
 
-/// The icon Explorer shows for this file, at the side asked for, as RGBA pixels.
-/// `None` when the path is unreachable or carries no icon — a network drive, a
-/// stripped binary.
-#[must_use]
-pub fn file_icon(path: &Path, side: i32) -> Option<(u32, u32, Vec<u8>)> {
-    if let Some(found) = shell_image(path, side) {
-        return Some(found);
-    }
-
-    let mut wide: Vec<u16> = path.as_os_str().encode_wide().collect();
-    wide.push(0);
-
+fn file_info_icon(path: windows::core::PCWSTR) -> Option<(u32, u32, Vec<u8>)> {
     let mut info = SHFILEINFOW::default();
     let got = unsafe {
         SHGetFileInfoW(
-            windows::core::PCWSTR(wide.as_ptr()),
+            path,
             windows::Win32::Storage::FileSystem::FILE_FLAGS_AND_ATTRIBUTES(0),
             Some(&mut info),
             u32::try_from(size_of::<SHFILEINFOW>()).ok()?,
@@ -810,6 +807,31 @@ pub fn file_icon(path: &Path, side: i32) -> Option<(u32, u32, Vec<u8>)> {
     let pixels = icon_pixels(info.hIcon);
     unsafe {
         let _ = DestroyIcon(info.hIcon);
+    }
+    pixels
+}
+
+/// The icon Explorer shows for this file, at the side asked for, as RGBA pixels.
+/// `None` when the path is unreachable or carries no icon.
+#[must_use]
+pub fn file_icon(path: &Path, side: i32) -> Option<(u32, u32, Vec<u8>)> {
+    use windows::Win32::Foundation::RPC_E_CHANGED_MODE;
+    use windows::Win32::System::Com::{COINIT_APARTMENTTHREADED, CoInitializeEx, CoUninitialize};
+
+    let executable = path
+        .extension()
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("exe"));
+    let mut wide: Vec<u16> = path.as_os_str().encode_wide().collect();
+    wide.push(0);
+    let path = windows::core::PCWSTR(wide.as_ptr());
+    let apartment = unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED) };
+    if apartment.is_err() && apartment != RPC_E_CHANGED_MODE {
+        return None;
+    }
+    // Both Shell APIs require COM on the calling thread, including the fallback.
+    let pixels = shell_image(path, side, executable).or_else(|| file_info_icon(path));
+    if apartment.is_ok() {
+        unsafe { CoUninitialize() };
     }
     pixels
 }

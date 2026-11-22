@@ -168,6 +168,7 @@ const ES = {
   domainListMissing: "Sin copia local",
   domainListRefresh: "Actualizar",
   domainListRefreshing: "Actualizando…",
+  ruleListRefreshBusy: "Esta lista ya se está actualizando.",
   ruleListDownloadFailed: "No se pudo actualizar la lista. Si había una copia local, se conserva.",
   kindUrl: "Esta URL",
   kindHost: "Subdominio",
@@ -192,8 +193,13 @@ const ES = {
   ruleNewPrivate: "En ventana privada",
   rulesOne: "1 regla",
   rulesMany: "{} reglas",
-  rulesFooter:
-    "Primero se comprueban las reglas de aplicación, URL, subdominio y sitio. Después se comprueban las listas, primero las inclusiones y luego las exclusiones. La regla general se aplica al final.",
+  rulesPriorityTitle: "Prioridad de las reglas",
+  rulesPrioritySource:
+    "Si coincide una regla de la aplicación desde la que se abre el enlace, tiene prioridad sobre cualquier regla sin aplicación asignada.",
+  rulesPriorityScope:
+    "Entre reglas con la misma asignación de aplicación, la prioridad va de mayor a menor en este orden. URL exacta → dominio exacto → sitio con subdominios → dominio en la lista → dominio fuera de la lista → «Los demás enlaces». Si coinciden dos reglas de sitio, gana la del dominio más específico.",
+  rulesPriorityOrder:
+    "El orden de las filas solo importa cuando la prioridad es la misma. Por ejemplo, si el dominio está en dos listas, se aplica la primera de las dos reglas que coinciden.",
   rulePrivate: "privada",
   ruleRemove: "Eliminar la regla de {}",
   ruleBrowser: "Navegador para la regla de {}",
@@ -584,6 +590,7 @@ const EN: Record<Key, string> = {
   domainListMissing: "No cached copy",
   domainListRefresh: "Refresh",
   domainListRefreshing: "Refreshing…",
+  ruleListRefreshBusy: "This list is already being refreshed.",
   ruleListDownloadFailed: "Could not refresh the list. Any existing cached copy is kept.",
   kindUrl: "This URL",
   kindHost: "Subdomain",
@@ -608,8 +615,13 @@ const EN: Record<Key, string> = {
   ruleNewPrivate: "In a private window",
   rulesOne: "1 rule",
   rulesMany: "{} rules",
-  rulesFooter:
-    "Application, exact URL, subdomain and site rules come first. Domain lists come next, with inclusions before exclusions. The fallback rule comes last.",
+  rulesPriorityTitle: "Rule priority",
+  rulesPrioritySource:
+    "A matching rule for the app that opened the link takes precedence over any rule without an app assigned.",
+  rulesPriorityScope:
+    "For rules with the same app assignment, priority decreases in this order. Exact URL → exact domain → site with subdomains → domain in list → domain not in list → Unmatched links. If two site rules match, the more specific domain wins.",
+  rulesPriorityOrder:
+    "Row order matters only when priorities are equal. For example, if the domain is in two lists, the higher of the two matching rows applies.",
   rulePrivate: "private",
   ruleRemove: "Delete the rule for {}",
   ruleBrowser: "Browser for the rule for {}",

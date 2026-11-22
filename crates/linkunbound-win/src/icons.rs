@@ -184,6 +184,29 @@ mod tests {
 
         let _ = fs::remove_dir_all(&dir);
     }
+
+    #[test]
+    fn concurrent_requests_each_get_an_icon_for_the_same_executable() {
+        let explorer = r"C:\Windows\explorer.exe";
+        if !Path::new(explorer).exists() {
+            return;
+        }
+        let dir = scratch("concurrent");
+        let start = std::sync::Barrier::new(6);
+        std::thread::scope(|scope| {
+            for index in 0..6 {
+                let dir = dir.join(index.to_string());
+                let start = &start;
+                scope.spawn(move || {
+                    start.wait();
+                    let icon = cached_or_extract(explorer, "explorer", &dir, 24)
+                        .expect("concurrent request should get the icon");
+                    assert!(icon.is_file());
+                });
+            }
+        });
+        let _ = fs::remove_dir_all(&dir);
+    }
 }
 
 #[cfg(test)]

@@ -283,7 +283,7 @@ pub fn platform(translated: bool) -> Option<&'static str> {
 }
 
 const PREFIXES: [&str; 2] = ["/opt/homebrew", "/usr/local"];
-const CASKS: [&str; 2] = ["linkunbound", "linkunbound-beta"];
+const CASKS: [&str; 3] = ["weslyg-linkunbound", "linkunbound", "linkunbound-beta"];
 
 fn chosen(running: Option<&Path>, there: impl Fn(&Path) -> bool) -> Kept {
     let packaged = running.is_some_and(|at| {
@@ -310,7 +310,7 @@ fn chosen(running: Option<&Path>, there: impl Fn(&Path) -> bool) -> Kept {
 }
 
 fn client() -> Option<reqwest::blocking::Client> {
-    reqwest::blocking::Client::builder()
+    crate::http::client()
         .timeout(PATIENCE)
         .user_agent(concat!("linkunbound/", env!("CARGO_PKG_VERSION")))
         .build()
@@ -1025,6 +1025,22 @@ mod tests {
                 package: Some("linkunbound-beta")
             }
         );
+    }
+
+    #[test]
+    fn the_fork_cask_takes_precedence_if_both_editions_are_installed() {
+        for prefix in PREFIXES {
+            assert_eq!(
+                chosen(at(APP), |path| {
+                    path.starts_with(prefix)
+                        && (path.ends_with("weslyg-linkunbound") || path.ends_with("linkunbound"))
+                }),
+                Kept {
+                    route: Route::Brew,
+                    package: Some("weslyg-linkunbound"),
+                }
+            );
+        }
     }
 
     #[test]

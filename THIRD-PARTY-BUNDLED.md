@@ -24,7 +24,7 @@ also under About → Licence texts.
 | `scheduler` | 0.28.0 | MIT |
 | `uc.micro` | 3.0.0 | MIT |
 
-## In the core (364 crates)
+## In the core (361 crates)
 
 | Crate | Version | Licence |
 | --- | --- | --- |
@@ -112,7 +112,6 @@ also under About → Licence texts.
 | `futures-util` | 0.3.34 | MIT OR Apache-2.0 |
 | `getrandom` | 0.2.17 | MIT OR Apache-2.0 |
 | `getrandom` | 0.3.4 | MIT OR Apache-2.0 |
-| `getrandom` | 0.4.3 | MIT OR Apache-2.0 |
 | `gif` | 0.14.2 | MIT OR Apache-2.0 |
 | `glob` | 0.3.4 | MIT OR Apache-2.0 |
 | `global-hotkey` | 0.9.0 | Apache-2.0 OR MIT |
@@ -157,7 +156,7 @@ also under About → Licence texts.
 | `indexmap` | 2.14.2 | Apache-2.0 OR MIT |
 | `infer` | 0.19.0 | MIT |
 | `infer` | 0.22.0 | MIT |
-| `interprocess` | 2.4.7 | 0BSD OR Apache-2.0 |
+| `interprocess` | 2.4.9 | 0BSD OR Apache-2.0 |
 | `ipnet` | 2.12.2 | MIT OR Apache-2.0 |
 | `itoa` | 1.0.18 | MIT OR Apache-2.0 |
 | `json-patch` | 4.2.0 | MIT/Apache-2.0 |
@@ -229,7 +228,7 @@ also under About → Licence texts.
 | `potential_utf` | 0.1.6 | Unicode-3.0 |
 | `powerfmt` | 0.2.0 | MIT OR Apache-2.0 |
 | `psl-types` | 2.0.11 | MIT/Apache-2.0 |
-| `psl` | 2.1.245 | MIT/Apache-2.0 |
+| `psl` | 2.1.261 | MIT/Apache-2.0 |
 | `pulldown-cmark` | 0.13.6 | MIT |
 | `pxfm` | 0.1.30 | BSD-3-Clause OR Apache-2.0 |
 | `quick-error` | 2.0.1 | MIT/Apache-2.0 |
@@ -240,21 +239,17 @@ also under About → Licence texts.
 | `regex-automata` | 0.4.18 | MIT OR Apache-2.0 |
 | `regex-syntax` | 0.8.11 | MIT OR Apache-2.0 |
 | `regex` | 1.13.1 | MIT OR Apache-2.0 |
-| `reqwest` | 0.12.28 | MIT OR Apache-2.0 |
 | `reqwest` | 0.13.5 | MIT OR Apache-2.0 |
 | `resvg` | 0.48.1 | Apache-2.0 OR MIT |
 | `rgb` | 0.8.53 | MIT |
 | `ring` | 0.17.14 | Apache-2.0 AND ISC |
 | `roxmltree` | 0.21.1 | MIT OR Apache-2.0 |
 | `rustix` | 1.1.5 | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT |
-| `rustls-native-certs` | 0.8.4 | Apache-2.0 OR ISC OR MIT |
 | `rustls-pki-types` | 1.15.1 | MIT OR Apache-2.0 |
 | `rustls-platform-verifier` | 0.7.0 | MIT OR Apache-2.0 |
 | `rustls-webpki` | 0.103.16 | ISC |
 | `rustls` | 0.23.46 | Apache-2.0 OR ISC OR MIT |
-| `ryu` | 1.0.23 | Apache-2.0 OR BSL-1.0 |
 | `same-file` | 1.0.6 | Unlicense/MIT |
-| `schannel` | 0.1.29 | MIT |
 | `scoped-tls-hkt` | 0.1.5 | MIT/Apache-2.0 |
 | `scopeguard` | 1.2.0 | MIT OR Apache-2.0 |
 | `security-framework-sys` | 2.17.0 | MIT OR Apache-2.0 |
@@ -263,7 +258,6 @@ also under About → Licence texts.
 | `serde_core` | 1.0.229 | MIT OR Apache-2.0 |
 | `serde_json` | 1.0.154 | MIT OR Apache-2.0 |
 | `serde_spanned` | 1.1.1 | MIT OR Apache-2.0 |
-| `serde_urlencoded` | 0.7.1 | MIT/Apache-2.0 |
 | `serde_with` | 3.23.0 | MIT OR Apache-2.0 |
 | `serde-untagged` | 0.1.9 | MIT OR Apache-2.0 |
 | `serde` | 1.0.229 | MIT OR Apache-2.0 |
@@ -347,6 +341,7 @@ also under About → Licence texts.
 | `widestring` | 1.2.1 | MIT OR Apache-2.0 |
 | `winapi-util` | 0.1.11 | Unlicense OR MIT |
 | `window-vibrancy` | 0.6.0 | Apache-2.0 OR MIT |
+| `windows_x86_64_msvc` | 0.48.5 | MIT OR Apache-2.0 |
 | `windows_x86_64_msvc` | 0.52.6 | MIT OR Apache-2.0 |
 | `windows_x86_64_msvc` | 0.53.1 | MIT OR Apache-2.0 |
 | `windows-collections` | 0.2.0 | MIT OR Apache-2.0 |
@@ -364,10 +359,12 @@ also under About → Licence texts.
 | `windows-result` | 0.4.1 | MIT OR Apache-2.0 |
 | `windows-strings` | 0.4.2 | MIT OR Apache-2.0 |
 | `windows-strings` | 0.5.1 | MIT OR Apache-2.0 |
+| `windows-sys` | 0.48.0 | MIT OR Apache-2.0 |
 | `windows-sys` | 0.52.0 | MIT OR Apache-2.0 |
 | `windows-sys` | 0.59.0 | MIT OR Apache-2.0 |
 | `windows-sys` | 0.60.2 | MIT OR Apache-2.0 |
 | `windows-sys` | 0.61.2 | MIT OR Apache-2.0 |
+| `windows-targets` | 0.48.5 | MIT OR Apache-2.0 |
 | `windows-targets` | 0.52.6 | MIT OR Apache-2.0 |
 | `windows-targets` | 0.53.5 | MIT OR Apache-2.0 |
 | `windows-threading` | 0.1.0 | MIT OR Apache-2.0 |

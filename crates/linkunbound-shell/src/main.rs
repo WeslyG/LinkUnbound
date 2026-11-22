@@ -519,13 +519,22 @@ fn native_handle(window: &slint::Window) -> Option<isize> {
 /// Shows whatever queued up behind the link just dealt with, so nothing a user
 /// clicked is silently dropped.
 fn next_in_line(picker: &Picker, words: &Strings, shown: &Rc<RefCell<Shown>>) {
+    show_queued(picker, words, shown, answered_by_rule);
+}
+
+fn show_queued(
+    picker: &Picker,
+    words: &Strings,
+    shown: &Rc<RefCell<Shown>>,
+    mut answer: impl FnMut(&str, Option<&Origin>) -> Option<Fired>,
+) {
     loop {
         let Some(arrival) = shown.borrow_mut().waiting.pop_front() else {
             return;
         };
         // The answer just given may have been «always here»: the links behind it are asked
         // again, as a link arriving now would be, before any of them is put on screen.
-        if let Some(fired) = answered_by_rule(&arrival.url, arrival.source.as_ref()) {
+        if let Some(fired) = answer(&arrival.url, arrival.source.as_ref()) {
             if let Some(ui) = ui() {
                 announce(&ui, &fired);
             }

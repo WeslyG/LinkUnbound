@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { type Key, type Language, spoken, useSpoken, useWords } from "../i18n";
 import { saidPlainly } from "../refusal";
 import { refresh } from "../theme";
@@ -131,6 +131,7 @@ export default function Application({
   const [problem, setProblem] = useState<string | null>(null);
   const [capturing, setCapturing] = useState(false);
   const [hasFallback, setHasFallback] = useState<boolean | null>(null);
+  const pendingSave = useRef(Promise.resolve());
 
   const [previewing, setPreviewing] = useState(false);
   const preview = () => {
@@ -140,7 +141,8 @@ export default function Application({
 
   const apply = (patch: Partial<Preferences>, then?: () => void) => {
     if (!settings) return;
-    void invoke<Settings>("prefs_set", { prefs: { ...settings.prefs, ...patch } })
+    pendingSave.current = pendingSave.current
+      .then(() => invoke<Settings>("prefs_set", { patch }))
       .then((next) => {
         setSettings(next);
         onLanguage(spoken(next.language));
@@ -155,7 +157,11 @@ export default function Application({
 
   const askAgainOnceTheResidentHasIt = () => {
     setTimeout(() => {
-      void invoke<Settings>("prefs_get").then(setSettings).catch(noop);
+      void invoke<Settings>("prefs_get")
+        .then(({ shortcut_held }) => {
+          setSettings((current) => current && { ...current, shortcut_held });
+        })
+        .catch(noop);
     }, RESIDENT_ANSWERS_WITHIN);
   };
 

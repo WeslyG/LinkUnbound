@@ -1,6 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { Speaking } from "../i18n";
 import Rules from "./Rules";
 
 const invoke = vi.fn();
@@ -89,6 +90,7 @@ describe("rules", () => {
     render(<Rules />);
     expect(await screen.findByText(/Todavía no hay ninguna regla/)).toBeInTheDocument();
     expect(screen.getByText(/Solo esta vez/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Prioridad de las reglas" })).toBeInTheDocument();
   });
 
   /// The empty screen used to send people to the picker and nowhere else; a rule for a site one
@@ -121,7 +123,9 @@ describe("rules", () => {
   it("offers the form above an existing list too", async () => {
     render(<Rules />);
     await userEvent.click(await screen.findByRole("button", { name: "Añadir regla" }));
-    expect(screen.getByRole("combobox", { name: "Cuándo" })).toHaveDisplayValue("Todo el sitio");
+    const kind = screen.getByRole("combobox", { name: "Cuándo" });
+    expect(kind).toHaveDisplayValue("Todo el sitio");
+    expect(within(kind).getAllByRole("option").at(-1)).toHaveValue("any");
     expect(screen.getByRole("textbox", { name: "google.com" })).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Cancelar" }));
     expect(screen.queryByRole("combobox", { name: "Cuándo" })).toBeNull();
@@ -270,19 +274,38 @@ describe("rules", () => {
     expect(invoke).not.toHaveBeenCalledWith("rules_remove", expect.anything());
   });
 
-  /// Specificity decides, and two rules precise in the same way cannot both
-  /// exist, so the order is not something the user can act on.
-  it("offers no reordering, because the order decides nothing", async () => {
+  it("offers no manual reordering", async () => {
     render(<Rules />);
     await screen.findByText("github.com");
     expect(screen.queryByRole("button", { name: /Subir la regla/ })).toBeNull();
     expect(screen.queryByRole("button", { name: /Bajar la regla/ })).toBeNull();
   });
 
-  it("says which rule wins instead of implying the order decides", async () => {
+  it("moves only the global fallback below all other rules", async () => {
+    const fallback = { ...FROM_TEAMS, id: "any", source_app: null };
+    answers([SITE, fallback, FROM_TEAMS, LINK]);
     render(<Rules />);
+    const rows = await screen.findAllByRole("listitem");
+    expect(rows).toHaveLength(4);
+    expect(within(rows[0]).getByText(SITE.covers)).toBeInTheDocument();
+    expect(within(rows[1]).getByText("teams")).toBeInTheDocument();
+    expect(within(rows[2]).getByText(LINK.covers)).toBeInTheDocument();
+    expect(within(rows[3]).getByText("Los demás enlaces")).toBeInTheDocument();
+  });
+
+  it("explains source priority, scope priority and when row order decides", async () => {
+    render(
+      <Speaking value="ru">
+        <Rules />
+      </Speaking>,
+    );
+    expect(await screen.findByRole("heading", { name: "Приоритет правил" })).toBeInTheDocument();
+    expect(screen.getByText(/важнее любого правила без привязки/)).toBeInTheDocument();
     expect(
-      await screen.findByText(/primero las inclusiones y luego las exclusiones/),
+      screen.getByText(/домен в списке → домен не в списке → «Остальные ссылки»/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Порядок строк влияет только при равном приоритете/),
     ).toBeInTheDocument();
   });
 
