@@ -1850,7 +1850,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ## Text 33
 
-`cookie` 0.18.2
+`cookie` 0.18.3
 
 ```text
 Apache License
@@ -2059,7 +2059,7 @@ limitations under the License.
 
 ## Text 34
 
-`cookie` 0.18.2
+`cookie` 0.18.3
 
 ```text
 Copyright (c) 2017 Sergio Benitez

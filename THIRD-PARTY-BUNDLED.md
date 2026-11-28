@@ -58,7 +58,7 @@ also under About → Licence texts.
 | `clru` | 0.6.3 | MIT |
 | `color_quant` | 1.1.0 | MIT |
 | `const-field-offset` | 0.2.1 | MIT OR Apache-2.0 |
-| `cookie` | 0.18.2 | MIT OR Apache-2.0 |
+| `cookie` | 0.18.3 | MIT OR Apache-2.0 |
 | `core_detect` | 1.0.0 | MIT/Apache-2.0 |
 | `core-foundation-sys` | 0.8.7 | MIT OR Apache-2.0 |
 | `core-foundation` | 0.10.1 | MIT OR Apache-2.0 |
